@@ -73,6 +73,7 @@ def camera_capture():
 
 
 if __name__ == "__main__":
+    # Comment in and out as needed
     image = camera_capture()
     #blob_finding(image)
     #find_colours(image)
