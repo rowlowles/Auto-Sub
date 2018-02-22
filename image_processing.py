@@ -8,18 +8,19 @@ camera = PiCamera()
 
 #RGB Values of "Red" = R: 198 G: 69 B: 73
 # Make range for red RGB: 180,60,80 --> 220,80,100
+
 def find_colours_rgb(image_address):
     # A one unit list containing a tuple of two BGR colour lists
-    bounds = [([80,60,180],[100,80,220])]
-    img = cv2.imread(image_address)#, cv2.IMREAD_GRAYSCALE)
+    bounds = [([80, 60, 180], [100, 80, 220])]
+    img = cv2.imread(image_address)  # , cv2.IMREAD_GRAYSCALE)
 
-    for lower,upper in bounds:
-        lower = np.array(lower,dtype="uint8")
+    for lower, upper in bounds:
+        lower = np.array(lower, dtype="uint8")
         upper = np.array(upper, dtype="uint8")
 
-        mask = cv2.inRange(img, lower,upper)
-        output = cv2.bitwise_and(img,img, mask=mask)
-        cv2.imshow("images",output )#np.hstack([img,output]))
+        mask = cv2.inRange(img, lower, upper)
+        output = cv2.bitwise_and(img, img, mask=mask)
+        cv2.imshow("images", output )  # np.hstack([img,output]))
         cv2.waitKey(0)
     print("Process image")
 
@@ -40,8 +41,20 @@ def find_colours_hsv(image_address):
 
 def blob_finding(image_address):
     img = cv2.imread(image_address)
+    img = cv2.GaussianBlur(img, (3, 3), 0)
+
+    edges = cv2.Canny(img,100,200)
+    cv2.imshow("edges",edges)
+    cv2.waitKey(0)
 
     params = cv2.SimpleBlobDetector_Params()
+    params.filterByCircularity = 1
+    params.filterByCircularity = .9
+    params.filterByArea=1
+    params.minArea = 200
+    params.filterByInertia = 1
+    params.minInertiaRatio = .5
+    params.maxInertiaRatio = .99
 
     detector = cv2.SimpleBlobDetector_create(params)
 
@@ -75,7 +88,7 @@ def camera_capture():
 if __name__ == "__main__":
     # Comment in and out as needed
     image = camera_capture()
-    #blob_finding(image)
+    blob_finding(image)
     #find_colours(image)
-    find_colours_hsv(image)
+    #find_colours_hsv(image)
     print ("Hello")
