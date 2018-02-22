@@ -5,15 +5,16 @@ The purpose of this class is to provide a wrapper for common IMU functions and t
 #ifndef _SUB_IMU_H
 #define _SUB_IMU_H
 
+// External Libraries
 #include "MPU9250.h"
 #include "Filters.h"
-#include "Queue.h"
-#include "MessageMaker.h"
 
+// Standard Libraries
 #include "Wire.h"
 
-#include <Arduino_FreeRTOS.h>
-#include <semphr.h> 
+// Custom Libraries
+#include "Constants.h"
+#include "SubMutex.h"
 
 #define  AHRS  true         // Set to false for basic data read
 #define  SerialDebug  false  // Set to true to get Serial output for debugging
@@ -30,12 +31,12 @@ class IMU {
     bool Init ();
 
     // This method wraps the methods for sending a message to the message board, the function accepts the message that is to be sent
-    void SendMessage (String src);
+    void SendMessage (bool data);
 
     // This method gives the class a method of posting messages to the message board
-    void SetMessagingBoard (SemaphoreHandle_t mutex,Queue<String>* messageBoard);
+    void SetMessagingBoard (SubMutex* mutex);
 
-    static void Loop( void * parameter );
+    void updateIMU ();
 
     private:
     // Internal functions to help with value updating
@@ -45,11 +46,9 @@ class IMU {
     void ReportValues();
 
     // Variables to control message passing
-    MessageMaker* _Logger;
-    MessageMaker* _DataStream;
-    SemaphoreHandle_t _messageBoardMutex;
-    Queue<String>* _messageBoard; 
-    
+    SubMutex* _messageBoardMutex;
+    String _message;
+
     // Variables to control IMU data collection and filtering
     double _oldtime;
     double _newtime;

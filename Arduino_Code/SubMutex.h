@@ -1,6 +1,8 @@
 #ifndef _SUB_MUTEX_H
 #define _SUB_MUTEX_H
 
+#include <Arduino.h>
+
 class SubMutex
 {
     public : 

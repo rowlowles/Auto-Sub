@@ -1,6 +1,6 @@
 #include "SubMutex.h"
 #include "Motor.h"
-//#include "IMU.h"
+#include "IMU.h"
 
 #define TO_INT(x) ((x) - '0')
 
@@ -15,12 +15,12 @@ bool stringComplete = false;
 SubMutex* serialMutex = new SubMutex();
 
 // Create the motors 
-Motor LeftMotor  (110,94,86,70,"(LM)");
-Motor RightMotor (110,94,86,70,"(RM)");
-Motor ServoMotor (175,90,90,35,"(SM)");
+Motor LeftMotor  (2000,1550,1450,1000,"(LM)");
+Motor RightMotor (2000,1550,1450,1000,"(RM)");
+Motor ServoMotor (170,90,90,35,"(SM)");
   
 // Create the IMU class 
-// IMU _IMU;
+IMU _IMU;
 
 void SendMessage(String src)
 {
@@ -45,10 +45,10 @@ void setup()
   LeftMotor.SetMessagingBoard(serialMutex);
   RightMotor.SetMessagingBoard(serialMutex);
   ServoMotor.SetMessagingBoard(serialMutex);
-  //_IMU.SetMessagingBoard(serialMutex, &messageBoard);
+  _IMU.SetMessagingBoard(serialMutex);
 
   // Run the needed initialization for the IMU
-  //_IMU.Init();
+  _IMU.Init();
 
   SendMessage("Done setup");
 }
@@ -71,23 +71,20 @@ void loop()
     // do something about it:
     if (inChar == '\n') {
       stringComplete = true;
-      serialMutex->TakeMutex();
-      Serial.print(inputString);
-      Serial.print("\n");
-      serialMutex->GiveMutex();
     }
   }
 
+  _IMU.updateIMU();
+    
   if(stringComplete)
   {
 
     //Let's find out who we are talking too
     if(inputString[1] == 'M')
     {
-      float inspeed = ((TO_INT(inputString[3]) * 100) + (TO_INT(inputString[4]) * 10) + TO_INT(inputString[5]))/100.0;
-      
       if(inputString[0] == 'L')
       {
+        float inspeed = ((TO_INT(inputString[3]) * 100) + (TO_INT(inputString[4]) * 10) + TO_INT(inputString[5]) +  TO_INT(inputString[6])/10.0 + TO_INT(inputString[7])/100.0 )/100.0;
         // We are talking to the left motor
         if( inputString[2] == '+' )
         {
@@ -108,6 +105,7 @@ void loop()
       }
       else if(inputString[0] == 'R')
       {
+        float inspeed = ((TO_INT(inputString[3]) * 100) + (TO_INT(inputString[4]) * 10) + TO_INT(inputString[5]) +  TO_INT(inputString[6])/10.0 + TO_INT(inputString[7])/100.0 )/100.0;
         // We are talking to the left motor
         if( inputString[2] == '+' )
         {
@@ -128,16 +126,12 @@ void loop()
       }
       else if(inputString[0] == 'S')
       {
+        float inspeed = (TO_INT(inputString[3]) * 100) + (TO_INT(inputString[4]) * 10) + TO_INT(inputString[5]);
         // We are talking to the left motor
-        if( inputString[2] == '+' )
+        if( inputString[2] == '+' || inputString[2] == '-')
         {
           // We want to move forward
-          ServoMotor.SetSpeed(inspeed, true);
-        }
-        else if( inputString[2] == '-')
-        {
-         // We want to move forward
-          ServoMotor.SetSpeed(inspeed, false);
+          ServoMotor.SetAngle(inspeed);
         }
         else
         {

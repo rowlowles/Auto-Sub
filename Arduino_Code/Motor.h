@@ -10,7 +10,6 @@ The purpose of this class is to provide a common interface for the motors that w
 
 // Custom Libraries
 #include "Constants.h"
-#include "Queue.h"
 #include "SubMutex.h"
 
 class Motor
@@ -26,8 +25,11 @@ class Motor
   
   // Sets the motor to a set speed
   // This method logs an error if the requested speed is not allowable
-  // This method sends an acknowledgment if requested
   void SetSpeed (float Speed, bool forward);
+
+  // Writes an angle to the motor
+  // This method logs an error if the requested speed is not allowable
+  void SetAngle (int angle);
   
   // This method sets the pin that the motor is connected too
   void SetPin(int pinNumber);

@@ -19,14 +19,26 @@ void Motor::SetSpeed (float Speed, bool Forward)
   if(Forward)
   {
     _currentSpeed = _upperStopValue + (_maxForward - _upperStopValue) * Speed;
-    _motor.write(_currentSpeed);
+    _motor.writeMicroseconds(_currentSpeed);
   }
   else
   {
     _currentSpeed = _lowerStopValue - (_lowerStopValue - _maxReverse) * Speed;
-    _motor.write(_currentSpeed);
+    _motor.writeMicroseconds(_currentSpeed);
   }
     
+  _message = _currentSpeed;
+  SendMessage(); 
+}
+
+void Motor::SetAngle (int angle)
+{
+  if(angle > _maxForward)
+    angle = _maxForward;
+  if(angle < _maxReverse)
+    angle = _maxReverse;
+  
+  _motor.write(angle);
   _message = _currentSpeed;
   SendMessage(); 
 }
@@ -49,6 +61,7 @@ void Motor::SendMessage ()
   Serial.print("[Log]");
   Serial.print(_message);
   Serial.print(_name); 
+  Serial.print("\n"); 
   _messageBoardMutex->GiveMutex();
 }
 

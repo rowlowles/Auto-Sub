@@ -2,9 +2,6 @@
 
 IMU::IMU()
 {
-    _Logger = new MessageMaker("IMU","Log");
-    _DataStream = new MessageMaker("IMU","Data");
-
     for(int i = 0; i < 3; i++)
     {
         _lowpassFilters [i] = *(new FilterOnePole(LOWPASS, 10000000));
@@ -14,41 +11,47 @@ IMU::IMU()
     _oldtime = 0; 
     _newtime = 0;
     _MPU9250 = new MPU9250(0);
+    _message.reserve(25);
 }
 
-void IMU::SetMessagingBoard (SemaphoreHandle_t mutex, Queue<String>* messageBoard)
+void IMU::SetMessagingBoard (SubMutex* mutex)
 {
-  _messageBoard = messageBoard;
   _messageBoardMutex = mutex;
 }
 
 bool IMU::Init()
 {
     Wire.begin();
-    SendMessage(_Logger->MakeMessage("Wire Started"));
+    _message = "Wire Started";
+    SendMessage(false);
 
     // Read the WHO_AM_I register, this is a good test of communication
     byte c = _MPU9250->readByte(_MPU9250->MPU9250_ADDRESS, WHO_AM_I_MPU9250);
     if (c == 0x71) // WHO_AM_I should always be 0x68
     {
-        SendMessage(_Logger->MakeMessage("IMU is online"));
+        _message = "Online";
+        SendMessage(false);
 
         // Start by performing self test and reporting values
         _MPU9250->MPU9250SelfTest(_MPU9250->SelfTest);
-        SendMessage(_Logger->MakeMessage("IMU has run self tests"));
+        _message = "Run self tests";
+        SendMessage(false);
 
         // Calibrate gyro and accelerometers, load biases in bias registers
         _MPU9250->calibrateMPU9250(_MPU9250->gyroBias, _MPU9250->accelBias);
-        SendMessage(_Logger->MakeMessage("IMU has been calibrated"));
+        _message = "Calibrated";
+        SendMessage(false);
 
         // Initialize device for active mode read of accelerometer, gyroscope, and
         // temperature
         _MPU9250->initMPU9250();
-        SendMessage(_Logger->MakeMessage("IMU initialized for active data mode"));
+        _message = "Initialized";
+        SendMessage(false);
     } // if (c == 0x71)
     else
     {
-        SendMessage(_Logger->MakeMessage("IMU Failed to boot"));
+        _message = "Failed to boot";
+        SendMessage(false);
         return false;
     }
     return true;
@@ -148,32 +151,35 @@ void IMU::UpdateValues()
 void IMU::ReportValues()
 {
     // Only hold the mutex for one message
-    SendMessage(_DataStream->MakeMessage(String(_roll) + ',' + String(_pitch) + ',' +String(_yaw)));
+    _message = String(_roll) + ',' + String(_pitch) + ',' + String(_yaw);
+    SendMessage(true);
 }
 
-void IMU::Loop( void * parameter  )
+void IMU::updateIMU()
 {
-    for(;;)
-    {
-        // Read the register values from the IMU if there are new values
-        ((IMU*) parameter)->ReadValues();
-    
-        // Must be called before updating quaternions!
-       ((IMU*) parameter)->_MPU9250->updateTime();
+    // Read the register values from the IMU if there are new values
+    ReadValues();
 
-        // Update the internal count of the IMU
-        ((IMU*) parameter)->UpdateCount();
+    // Must be called before updating quaternions!
+    _MPU9250->updateTime();
 
-        // Update our internal variables and report values if appropriate
-        ((IMU*) parameter)->UpdateValues();
-    }
+    // Update the internal count of the IMU
+    UpdateCount();
+
+    // Update our internal variables and report values if appropriate
+    UpdateValues();
 }
 
-void IMU::SendMessage (String src)
+void IMU::SendMessage (bool data)
 {
-  xSemaphoreTake(_messageBoardMutex,0);
-  _messageBoard->enqueue(src);
-   xSemaphoreGive(_messageBoardMutex);
+  _messageBoardMutex->TakeMutex();
+  if(data)
+    Serial.print("[Log]");
+  else
+    Serial.print("[Data]");
+  Serial.print(_message);
+  Serial.print("(IMU)\n");
+  _messageBoardMutex->GiveMutex();
 }
 
 
