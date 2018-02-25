@@ -1,10 +1,10 @@
 import cv2
 import numpy as np
-from picamera import PiCamera
+#from picamera import PiCamera
 import time
 import datetime
 
-camera = PiCamera()
+camera = 3#PiCamera()
 
 #RGB Values of "Red" = R: 198 G: 69 B: 73
 # Make range for red RGB: 180,60,80 --> 220,80,100
@@ -20,7 +20,10 @@ def find_colours_rgb(image_address):
 
         mask = cv2.inRange(img, lower, upper)
         output = cv2.bitwise_and(img, img, mask=mask)
-        cv2.imshow("images", output )  # np.hstack([img,output]))
+
+        cv2.namedWindow("image",cv2.WINDOW_NORMAL)
+        cv2.resizeWindow("image", 100,100)
+        cv2.imshow("images", output)  # np.hstack([img,output]))
         cv2.waitKey(0)
     print("Process image")
 
@@ -30,12 +33,33 @@ def find_colours_hsv(image_address):
     blur_im = cv2.GaussianBlur(im, (5, 5), 0)
     blur_hsv = cv2.cvtColor(blur_im, cv2.COLOR_BGR2HSV)
 
-    lowerRed = np.array([0, 50, 50])
-    upperRed = np.array([10, 255, 255])
+    # lowerRed = np.array([0, 117, 0])
+    # upperRed = np.array([14, 255, 255])
+    # lowerYellow = np.array([16, 117, 0])
+    # upperYellow = np.array([33, 255, 255])
+    lowerGreen = np.array([37, 157, 0])
+    upperGreen = np.array([51, 255, 255])
 
-    mask = cv2.inRange(blur_hsv, upperRed, lowerRed)
+    mask = cv2.inRange(blur_hsv, lowerGreen, upperGreen)
     res = cv2.bitwise_and(blur_hsv, blur_hsv, mask=mask)
-    cv2.imshow("name", mask)
+    cv2.imshow("name", res)
+    cv2.waitKey(0)
+
+    params = cv2.SimpleBlobDetector_Params()
+    # params.filterByCircularity = True
+    # params.filterByCircularity = .9
+    # params.filterByArea = True
+    # params.minArea = 100
+    # params.filterByInertia = True
+    # params.minInertiaRatio = .5
+    # params.maxInertiaRatio = 1
+
+
+    detector = cv2.SimpleBlobDetector_create(params)
+    keypoints = detector.detect(mask)
+    im_with_keypoints = cv2.drawKeypoints(mask, keypoints, np.array([]), (0, 0, 255),
+                                          cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+    cv2.imshow("image", im_with_keypoints)
     cv2.waitKey(0)
 
 
@@ -43,25 +67,30 @@ def blob_finding(image_address):
     img = cv2.imread(image_address)
     img = cv2.GaussianBlur(img, (3, 3), 0)
 
-    edges = cv2.Canny(img,100,200)
-    cv2.imshow("edges",edges)
-    cv2.waitKey(0)
+    # edges = cv2.Canny(img, 50, 200)
+    # cv2.namedWindow("edges", cv2.WINDOW_NORMAL)
+    # cv2.resizeWindow("edges", 1000, 750)
+    # cv2.imshow("edges", edges)
+    # cv2.waitKey(0)
 
     params = cv2.SimpleBlobDetector_Params()
-    params.filterByCircularity = 1
+    params.filterByCircularity = True
     params.filterByCircularity = .9
-    params.filterByArea=1
-    params.minArea = 200
-    params.filterByInertia = 1
+    params.filterByArea = True
+    params.minArea = 100
+    params.filterByInertia = True
     params.minInertiaRatio = .5
-    params.maxInertiaRatio = .99
+    params.maxInertiaRatio = 1
 
     detector = cv2.SimpleBlobDetector_create(params)
 
     keypoints = detector.detect(img)
+
     im_with_keypoints = cv2.drawKeypoints(img, keypoints, np.array([]), (0, 0, 255),
                                           cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-
+    cv2.namedWindow("image", cv2.WINDOW_NORMAL)
+    cv2.resizeWindow("image", 1000, 750)
+    # cv2.imshow("images", output)
     cv2.imshow("image",im_with_keypoints)
     cv2.waitKey(0)
 
@@ -87,8 +116,8 @@ def camera_capture():
 
 if __name__ == "__main__":
     # Comment in and out as needed
-    image = camera_capture()
-    blob_finding(image)
+    image = "Golf_Balls.jpg"#camera_capture()
+    #blob_finding(image)
     #find_colours(image)
-    #find_colours_hsv(image)
+    find_colours_hsv(image)
     print ("Hello")
