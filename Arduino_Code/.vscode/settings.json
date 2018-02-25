@@ -1,0 +1,10 @@
+{
+    "spellright.language": "en",
+    "spellright.documentTypes": [
+        "markdown",
+        "latex",
+        "plaintext",
+        "cpp"
+    ],
+    "C_Cpp.intelliSenseEngine": "Tag Parser"
+}

@@ -314,3 +314,4 @@ void Queue<T>::blink () const {
 }
 
 #endif // _Queue_H
+

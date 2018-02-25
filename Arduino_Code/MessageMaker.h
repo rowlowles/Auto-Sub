@@ -10,7 +10,7 @@ class MessageMaker
 {
     public:
 
-    MessageMaker() = delete;
+    MessageMaker();
 
     MessageMaker (String userName, String type)
     {
@@ -20,12 +20,12 @@ class MessageMaker
 
     String MakeMessage(String src)
     {
-        return ("[" + _type + "] - " + src + "(" + _userName +")\n");
+        return ( String("[") + _type + String("]") + src + String("(") + _userName + String(")\n") );
     }
-
-    protected:
+    
     String _userName;
     String _type;
 };
 
 #endif // SUB_MESSAGE_MAKER
+
