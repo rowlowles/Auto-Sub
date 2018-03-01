@@ -1,9 +1,7 @@
-#include "SubMutex.h"
 #include "Motor.h"
-#include "IMU.h"
 
 #define TO_INT(x) ((x) - '0')
-
+ 
 // a String to hold incoming data
 char inputString[10];
 int pos = 0;
@@ -15,12 +13,9 @@ bool stringComplete = false;
 SubMutex* serialMutex = new SubMutex();
 
 // Create the motors 
-Motor LeftMotor  (2000,1550,1450,1000,"(LM)");
-Motor RightMotor (2000,1550,1450,1000,"(RM)");
+Motor LeftMotor  (2000,1545,1455,1000,"(LM)");
+Motor RightMotor (2000,1545,1455,1000,"(RM)");
 Motor ServoMotor (170,90,90,35,"(SM)");
-  
-// Create the IMU class 
-IMU _IMU;
 
 void SendMessage(String src)
 {
@@ -32,24 +27,22 @@ void SendMessage(String src)
 void setup()
 {
   // Start the serial communication
-  Serial.begin(38400);
+  Serial.begin(1000000);
 
   SendMessage("Started");
 
   // Allocate the pins for the motors
-  LeftMotor.SetPin( 6 );
+  LeftMotor.SetPin ( 6 );
   RightMotor.SetPin( 5 );
-  ServoMotor.SetPin( 3 );
+  ServoMotor.SetPin( 3 );  
   
   // Set up the required messaging variables
   LeftMotor.SetMessagingBoard(serialMutex);
   RightMotor.SetMessagingBoard(serialMutex);
   ServoMotor.SetMessagingBoard(serialMutex);
-  _IMU.SetMessagingBoard(serialMutex);
 
-  // Run the needed initialization for the IMU
-  _IMU.Init();
-
+  ServoMotor.SetAngle(102);
+  
   SendMessage("Done setup");
 }
 
@@ -73,9 +66,7 @@ void loop()
       stringComplete = true;
     }
   }
-
-  _IMU.updateIMU();
-    
+  
   if(stringComplete)
   {
 
