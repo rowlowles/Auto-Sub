@@ -1,0 +1,153 @@
+# With IMU KalmanFilter
+
+pi@raspberrypi:~/kts/scripts $ python3 main.py 
+
+Clock type: CPU
+Ordered by: totaltime, desc
+
+name                                  ncall  tsub      ttot      tavg
+..hon3.5/threading.py:851 Thread.run  2      0.000789  15.07666  7.538331
+..cripts/SubIMU.py:88 SubIMU.ReadIMU  1      0.609390  14.95426  14.95426
+..lmanFilter.py:15 KalmanFilter.Step  562    2.499859  12.55095  0.022333
+..ib/defmatrix.py:306 matrix.__mul__  6182   1.231696  6.531799  0.001057
+..x.py:258 matrix.__array_finalize__  17985  2.109646  2.690235  0.000150
+..matrixlib/defmatrix.py:212 __new__  7309   1.035315  2.039425  0.000279
+..matrixlib/defmatrix.py:32 asmatrix  6180   0.874483  1.655683  0.000268
+..ges/numpy/linalg/linalg.py:464 inv  562    0.458173  1.461297  0.002600
+../core/fromnumeric.py:529 transpose  1686   0.187806  0.913504  0.000542
+..y/core/fromnumeric.py:50 _wrapfunc  1686   0.204525  0.725698  0.000430
+..b/defmatrix.py:314 matrix.__rmul__  562    0.050336  0.371817  0.000662
+..y/linalg/linalg.py:138 _commonType  562    0.128369  0.260519  0.000464
+..s/numpy/lib/twodim_base.py:140 eye  562    0.178779  0.240608  0.000428
+..py/linalg/linalg.py:105 _makearray  562    0.080495  0.223181  0.000397
+../linalg.py:208 _assertNdSquareness  562    0.103751  0.160464  0.000286
+..efmatrix.py:280 matrix.__getitem__  562    0.098613  0.122325  0.000218
+..oard.py:28 MessageBoard.ReadSerial  1      0.006771  0.121610  0.121610
+../numpy/core/numeric.py:424 asarray  562    0.060093  0.120936  0.000215
+..linalg/linalg.py:110 isComplexType  1124   0.072349  0.105469  0.000094
+..ial/serialposix.py:460 Serial.read  51     0.031373  0.085298  0.001673
+..mpy/linalg/linalg.py:123 _realType  562    0.041681  0.058800  0.000105
+..alg.py:100 get_linalg_error_extobj  562    0.044867  0.044867  0.000080
+../linalg.py:197 _assertRankAtLeast2  562    0.034959  0.034959  0.000062
+../Submarine.py:7 Submarine.__init__  1      0.000689  0.029615  0.029615
+..ripts/SubIMU.py:17 SubIMU.__init__  1      0.010353  0.023770  0.023770
+..py:13 KalmanFilter.GetCurrentState  562    0.022285  0.022285  0.000040
+..erialutil.py:137 Timeout.time_left  80     0.012723  0.019829  0.000248
+../serialutil.py:133 Timeout.expired  29     0.002870  0.010354  0.000357
+..serialutil.py:123 Timeout.__init__  51     0.008169  0.010317  0.000202
+../serialutil.py:176 Serial.__init__  1      0.002390  0.009891  0.009891
+..eBoard.py:10 MessageBoard.__init__  1      0.001256  0.008668  0.008668
+..ial/serialposix.py:254 Serial.open  1      0.001946  0.006742  0.006742
+..n3.5/threading.py:826 Thread.start  2      0.000843  0.005932  0.002966
+..5/threading.py:755 Thread.__init__  3      0.001679  0.004482  0.001494
+..hon3.5/threading.py:531 Event.wait  2      0.000873  0.004092  0.002046
+...5/threading.py:261 Condition.wait  2      0.001194  0.002666  0.001333
+..ix.py:301 Serial._reconfigure_port  1      0.001528  0.002404  0.002404
+..oard.py:61 MessageBoard.CloseBoard  1      0.000417  0.001936  0.001936
+...5/threading.py:496 Event.__init__  3      0.000685  0.001588  0.000529
+..oard.py:48 MessageBoard.LogMessage  2      0.000626  0.000901  0.000451
+..hreading.py:213 Condition.__init__  3      0.000807  0.000807  0.000269
+..tlocale.py:23 getpreferredencoding  3      0.000341  0.000642  0.000214
+..ix.py:609 Serial._update_dtr_state  1      0.000287  0.000505  0.000505
+..Submarine.py:58 Submarine.ShutDown  1      0.000128  0.000488  0.000488
+..n3.5/_weakrefset.py:81 WeakSet.add  3      0.000393  0.000484  0.000161
+..5/threading.py:1224 current_thread  3      0.000275  0.000364  0.000121
+..reading.py:237 Condition.__enter__  2      0.000199  0.000284  0.000142
+..reading.py:252 Condition._is_owned  2      0.000196  0.000281  0.000140
+..hreading.py:240 Condition.__exit__  2      0.000209  0.000269  0.000135
+..umpy/core/numeric.py:1917 isscalar  2      0.000205  0.000269  0.000135
+..ix.py:602 Serial._update_rts_state  1      0.000127  0.000264  0.000264
+...py:249 Condition._acquire_restore  2      0.000158  0.000240  0.000120
+..ython3.5/threading.py:725 _newname  3      0.000234  0.000234  0.000078
+..ing.py:246 Condition._release_save  2      0.000181  0.000233  0.000117
+..x.py:569 Serial.reset_input_buffer  1      0.000139  0.000210  0.000210
+..py:185 IncrementalEncoder.__init__  3      0.000177  0.000177  0.000059
+..rial/serialutil.py:254 Serial.port  1      0.000140  0.000176  0.000176
+..nFilter.py:5 KalmanFilter.__init__  2      0.000172  0.000172  0.000086
+..y:27 Submarine.SendLeftSpeedPacket  1      0.000139  0.000171  0.000171
+..reading.py:1118 _MainThread.daemon  3      0.000133  0.000133  0.000044
+..:36 Submarine.SendRightSpeedPacket  1      0.000098  0.000122  0.000122
+../serialutil.py:275 Serial.baudrate  1      0.000111  0.000111  0.000111
+..n3.5/threading.py:504 Event.is_set  2      0.000070  0.000070  0.000035
+../serialutil.py:298 Serial.bytesize  1      0.000066  0.000066  0.000066
+../serialutil.py:326 Serial.stopbits  1      0.000059  0.000059  0.000059
+..l/serialutil.py:340 Serial.timeout  1      0.000058  0.000058  0.000058
+..al/serialutil.py:312 Serial.parity  1      0.000057  0.000057  0.000057
+..al/serialutil.py:423 Serial.dsrdtr  1      0.000054  0.000054  0.000054
+..l.py:379 Serial.inter_byte_timeout  1      0.000046  0.000046  0.000046
+..alutil.py:359 Serial.write_timeout  1      0.000046  0.000046  0.000046
+..l/serialutil.py:399 Serial.xonxoff  1      0.000044  0.000044  0.000044
+..al/serialutil.py:411 Serial.rtscts  1      0.000042  0.000042  0.000042
+
+name           id     tid              ttot      scnt
+Thread         1      3041629296       5.295735  55
+Thread         2      3031430256       5.295100  53
+_MainThread    0      3070203056       0.760566  6
+
+# Without IMU KalmanFilter
+
+pi@raspberrypi:~/kts/scripts $ python3 main.py
+
+Clock type: CPU
+Ordered by: totaltime, desc
+
+name                                  ncall  tsub      ttot      tavg
+..hon3.5/threading.py:851 Thread.run  2/1    0.000336  1.519292  0.759646
+..cripts/SubIMU.py:88 SubIMU.ReadIMU  1      0.599733  1.518956  1.518956
+..ial/serialposix.py:460 Serial.read  52/51  0.032379  0.086427  0.001662
+../Submarine.py:7 Submarine.__init__  1      0.000748  0.029511  0.029511
+..ripts/SubIMU.py:17 SubIMU.__init__  1      0.010035  0.023677  0.023677
+..erialutil.py:137 Timeout.time_left  81     0.013215  0.020551  0.000254
+..serialutil.py:123 Timeout.__init__  52     0.009394  0.011838  0.000228
+../serialutil.py:133 Timeout.expired  29     0.002715  0.009539  0.000329
+../serialutil.py:176 Serial.__init__  1      0.002270  0.009295  0.009295
+..eBoard.py:10 MessageBoard.__init__  1      0.001131  0.008737  0.008737
+..ial/serialposix.py:254 Serial.open  1      0.001788  0.006196  0.006196
+..n3.5/threading.py:826 Thread.start  2      0.000825  0.005855  0.002927
+..matrixlib/defmatrix.py:212 __new__  5      0.001692  0.005056  0.001011
+..5/threading.py:755 Thread.__init__  3      0.001917  0.004582  0.001527
+..hon3.5/threading.py:531 Event.wait  2      0.000801  0.004042  0.002021
+...5/threading.py:261 Condition.wait  2      0.001200  0.002708  0.001354
+..ix.py:301 Serial._reconfigure_port  1      0.001400  0.002065  0.002065
+..oard.py:61 MessageBoard.CloseBoard  1      0.000463  0.001821  0.001821
+...5/threading.py:496 Event.__init__  3      0.000576  0.001455  0.000485
+..oard.py:48 MessageBoard.LogMessage  2      0.000568  0.000955  0.000478
+..hreading.py:213 Condition.__init__  3      0.000791  0.000791  0.000264
+..x.py:258 matrix.__array_finalize__  5      0.000508  0.000684  0.000137
+..tlocale.py:23 getpreferredencoding  3      0.000336  0.000518  0.000173
+..n3.5/_weakrefset.py:81 WeakSet.add  3      0.000378  0.000466  0.000155
+..Submarine.py:58 Submarine.ShutDown  1      0.000166  0.000392  0.000392
+..ix.py:609 Serial._update_dtr_state  1      0.000135  0.000388  0.000388
+..5/threading.py:1224 current_thread  3      0.000282  0.000363  0.000121
+..ix.py:602 Serial._update_rts_state  1      0.000216  0.000360  0.000360
+...py:249 Condition._acquire_restore  2      0.000198  0.000280  0.000140
+..reading.py:237 Condition.__enter__  2      0.000192  0.000270  0.000135
+..reading.py:252 Condition._is_owned  2      0.000186  0.000269  0.000135
+..hreading.py:240 Condition.__exit__  2      0.000208  0.000263  0.000131
+..ython3.5/threading.py:725 _newname  3      0.000235  0.000235  0.000078
+..ing.py:246 Condition._release_save  2      0.000180  0.000230  0.000115
+..x.py:569 Serial.reset_input_buffer  1      0.000135  0.000203  0.000203
+..nFilter.py:5 KalmanFilter.__init__  2      0.000175  0.000175  0.000087
+..py:185 IncrementalEncoder.__init__  3      0.000173  0.000173  0.000058
+..rial/serialutil.py:254 Serial.port  1      0.000138  0.000173  0.000173
+..y:27 Submarine.SendLeftSpeedPacket  1      0.000135  0.000163  0.000163
+..reading.py:1118 _MainThread.daemon  3      0.000146  0.000146  0.000049
+..:36 Submarine.SendRightSpeedPacket  1      0.000096  0.000118  0.000118
+../serialutil.py:275 Serial.baudrate  1      0.000114  0.000114  0.000114
+..al/serialutil.py:411 Serial.rtscts  1      0.000112  0.000112  0.000112
+..n3.5/threading.py:504 Event.is_set  2      0.000071  0.000071  0.000036
+../serialutil.py:298 Serial.bytesize  1      0.000066  0.000066  0.000066
+..l/serialutil.py:340 Serial.timeout  1      0.000060  0.000060  0.000060
+..al/serialutil.py:312 Serial.parity  1      0.000060  0.000060  0.000060
+../serialutil.py:326 Serial.stopbits  1      0.000055  0.000055  0.000055
+..al/serialutil.py:423 Serial.dsrdtr  1      0.000049  0.000049  0.000049
+..l.py:379 Serial.inter_byte_timeout  1      0.000049  0.000049  0.000049
+..alutil.py:359 Serial.write_timeout  1      0.000048  0.000048  0.000048
+..l/serialutil.py:399 Serial.xonxoff  1      0.000043  0.000043  0.000043
+..oard.py:28 MessageBoard.ReadSerial  1      0.000000  0.000000  0.000000
+
+name           id     tid              ttot      scnt
+Thread         1      3041449072       4.792311  53
+Thread         2      3031430256       4.791755  53
+_MainThread    0      3070022832       0.555317  7
+pi@raspberrypi:~/kts/scripts $

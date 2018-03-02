@@ -1,9 +1,24 @@
 import serial
+from time import sleep
 
-ser = serial.Serial('/dev/ttyACM0',9600)
-s = [0,1]
-while True:
-	read_serial=ser.readline()
-	s[0] = str(int (ser.readline(),16))
-	print s[0]
-	print read_serial
+ser = serial.Serial('/dev/ttyACM0',38400)
+
+sleep(2)
+print(ser.readline())
+print(ser.readline())
+print(ser.readline())
+print(ser.readline())
+
+ser.write(b'LM+05000\n')
+ser.write(b'RM-05000\n')
+
+print(ser.readline())
+print(ser.readline())
+
+sleep(10)
+
+ser.write(b'LM+00000\n')
+ser.write(b'RM+00000\n')
+
+print(ser.readline())
+print(ser.readline())

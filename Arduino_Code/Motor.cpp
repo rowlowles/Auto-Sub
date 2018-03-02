@@ -39,6 +39,7 @@ void Motor::SetAngle (int angle)
     angle = _maxReverse;
   
   _motor.write(angle);
+  _currentSpeed = angle;
   _message = _currentSpeed;
   SendMessage(); 
 }
