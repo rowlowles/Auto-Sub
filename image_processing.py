@@ -42,7 +42,9 @@ def find_colours_hsv(image_address):
 
     mask = cv2.inRange(blur_hsv, lowerGreen, upperGreen)
     res = cv2.bitwise_and(blur_hsv, blur_hsv, mask=mask)
-    cv2.imshow("name", res)
+    cv2.namedWindow("image", cv2.WINDOW_NORMAL)
+    cv2.resizeWindow("image", 750, 1000)
+    cv2.imshow("image", res)
     cv2.waitKey(0)
 
     params = cv2.SimpleBlobDetector_Params()
@@ -89,7 +91,7 @@ def blob_finding(image_address):
     im_with_keypoints = cv2.drawKeypoints(img, keypoints, np.array([]), (0, 0, 255),
                                           cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
     cv2.namedWindow("image", cv2.WINDOW_NORMAL)
-    cv2.resizeWindow("image", 1000, 750)
+    cv2.resizeWindow("image", 750, 1000)
     # cv2.imshow("images", output)
     cv2.imshow("image",im_with_keypoints)
     cv2.waitKey(0)
@@ -116,7 +118,7 @@ def camera_capture():
 
 if __name__ == "__main__":
     # Comment in and out as needed
-    image = "Golf_Balls.jpg"#camera_capture()
+    image = "test_img_7.jpg"  # camera_capture()
     #blob_finding(image)
     #find_colours(image)
     find_colours_hsv(image)
