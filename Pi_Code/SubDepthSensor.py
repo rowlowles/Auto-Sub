@@ -37,6 +37,7 @@ class SubDepthSensor:
 		readSensor = True 
 		
 		while(readSensor):
+			
 			if (self.sensor.read()):
 			
 				self._filter.Step(numpy.matrix([0]),numpy.matrix([self.sensor.depth()]))

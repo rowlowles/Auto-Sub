@@ -31,7 +31,7 @@ class SubIMU:
 			self._IMU.setSlerpPower(0.02)
 			# Turn on the devices we want to use to locate
 			self._IMU.setGyroEnable(True)
-			self._IMU.setAccelEnable(False)
+			self._IMU.setAccelEnable(True)
 			self._IMU.setCompassEnable(False)
 			self.magnetic_deviation = -13.7
 			# Create and start the process
@@ -44,9 +44,7 @@ class SubIMU:
 		tLastRead = time.time()
 		readIMU = True
 		
-		while(readIMU):
-			# time.sleep(1/self.SamplingRate)
-		
+		while(readIMU):		
 			if( (time.time() - tLastRead) > 5 ):
 				# We lost connection log a message 
 				connection.send("[Log] Lost connection (SubIMU)\n")
@@ -60,15 +58,19 @@ class SubIMU:
 				tLastRead = time.time()
 				data = self._IMU.getIMUData()
 				fusionPose = data['fusionPose']
+				Accel = data['accel']
 				Gyro = data['gyro']
 
 				pitch = round(math.degrees(fusionPose[1]), 3)
 				yaw = round(math.degrees(fusionPose[2]), 3)
 				
+				YAccel = round(math.degrees(Accel[1]), 5)
+				
 				if yaw < 90.1:
 					heading = yaw + 270 - self.magnetic_deviation
 				else:
 					heading = yaw - 90 - self.magnetic_deviation
+					
 				if heading > 360.0:
 					heading = heading - 360.0
 				
@@ -76,7 +78,7 @@ class SubIMU:
 					heading = heading + 360.0
 				
 				if(self._Ready):
-					connection.send([0,pitch,heading])
+					connection.send([0,pitch,heading,YAccel])
 				
 				if(SaveSensorData):
 					dataFile.write( str(time.time()) + "," + str(pitch) + "," + str(heading) + "\n")
