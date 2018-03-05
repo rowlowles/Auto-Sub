@@ -5,6 +5,8 @@ from threading import Thread, Lock
 from multiprocessing import Process,Pipe
 from MessageBoard import MessageBoard
 from MaintainForward import MaintainForward
+from  ClockWiseTurn import ClockWiseTurn
+from  CounterClockWiseTurn import CounterClockWiseTurn
 from time import sleep,time
 SmallChange = 1e-1
 
@@ -14,6 +16,7 @@ class Submarine:
 		self._roll  = 0
 		self._pitch = 0
 		self._yaw   = 0
+		self._YAccel = 0 
 		self._angleFirstRead = True
 		# Create variables to hold depth
 		self._depth = 0 
@@ -32,10 +35,12 @@ class Submarine:
 		self.depthSensor = SubDepthSensor(self._messageBoard._DepthFile, self.depthChildConn, SaveSensorData)
 		# Create the Maintain Forward object
 		self._maintainForward = MaintainForward()
+		# Create a clockwise turn object
+		self._clockWiseTurn = ClockWiseTurn()
+		# Create a counterclockwise turn object
+		self._counterClockWiseTurn = CounterClockWiseTurn()
 		# Create the timing variables
-		self._stateUpdateRate = float(1000) # Hz
-		self._speedUpdateRate = float(5) # Hz
-		self._rateDiff = int(self._stateUpdateRate/self._speedUpdateRate)
+		self._rateDiff = 75
 		# Create a method to leave
 		self._exit = False
 		
@@ -51,6 +56,7 @@ class Submarine:
 				self._roll  = message[0]
 				self._pitch = message[1]
 				self._yaw   = message[2]	
+				self._YAccel = message[3]
 
 		# This method checks the IMU connection and update values
 	def UpdateDepth(self):
@@ -84,43 +90,77 @@ class Submarine:
 		
 		if(Packet[2] != None):		
 			if( abs(self._rightSpeed - Packet[2]) > SmallChange):
-				self._leftSpeed = Packet[2]
+				self._rightSpeed = Packet[2]
 				self._messageBoard.SendRightSpeedPacket(Packet[2],Packet[3])
-			
-		if( abs(self._servoAngle - Packet[4]) > SmallChange):
-			Packet[4] = int(Packet[4])
-			
-			if(Packet[4] > 170):
-				Packet[4] = 170
-			elif(Packet[4] < 35):
-				Packet[4] = 35
+		
+		if(Packet[4] != None):				
+			if( abs(self._servoAngle - Packet[4]) > SmallChange):
+				Packet[4] = int(Packet[4])
+				
+				if(Packet[4] > 170):
+					Packet[4] = 170
+				elif(Packet[4] < 35):
+					Packet[4] = 35
 				
 			self._servoAngle = Packet[4]
 			self._messageBoard.SendServoAnglePacket(Packet[4])
 			
-	
-	# This is the main method of the submarine object, collects data from sensor while watching serial port and determining motion
-	def Start (self):
+	def UpdateSubState(self):
+		self.UpdateAngles()
+		self.UpdateDepth()
+		self.CheckSerial()
+		
+	# This will maintain a trajectory
+	def Forward (self, length):
+		self.UpdateSubState()
 		counter = 0
 		startTime = time()
-		while( not self._exit):
-			if(time() - startTime > 20):
-				self._exit = True
-				
-			self.UpdateAngles()
-			self.UpdateDepth()
-			self.CheckSerial()
-			
+		
+		while( time() - startTime < length):
+			# Update the submarine state
+			self.UpdateSubState()
+			# Update the counter
 			counter = counter + 1
-			
+			# Send message if enough time has passed
 			if( counter == self._rateDiff):
 				if(not self._maintainForward.StateCaptured):
-					self._maintainForward.CaptureState([self._roll,self._pitch,self._yaw], self._depth, self._servoAngle)
-				
-				self.UpdateMotorSpeed(self._maintainForward.UpdateState([self._roll,self._pitch,self._yaw], self._depth, self._servoAngle))
+					self._maintainForward.CaptureState([self._roll,self._pitch,self._yaw,self._YAccel], self._depth, self._servoAngle)
+				self.UpdateMotorSpeed(self._maintainForward.UpdateState([self._roll,self._pitch,self._yaw,self._YAccel], self._depth, self._servoAngle))
 				counter = 0 
 				
-			# sleep(1/self._stateUpdateRate)
+	def ClockWiseTurn (self, angle):
+		self.UpdateSubState()
+		counter = 0
+		StopAngle = self._yaw + angle
+		
+		while( abs(StopAngle - self._yaw) > 1):
+			# Update the submarine state
+			self.UpdateSubState()
+			# Update the counter
+			counter = counter + 1
+			# Send message if enough time has passed
+			if( counter == self._rateDiff):
+				if(not self._clockWiseTurn.StateCaptured):
+					self._clockWiseTurn.CaptureState([self._roll,self._pitch,self._yaw],angle)
+				self.UpdateMotorSpeed(self._clockWiseTurn.UpdateState([self._roll,self._pitch,self._yaw]))
+				counter = 0 
+				
+	def CounterClockWiseTurn(self, angle):
+		self.UpdateSubState()
+		counter = 0
+		StopAngle = self._yaw - angle
+		
+		while( abs(StopAngle - self._yaw) > 1):
+			# Update the submarine state
+			self.UpdateSubState()
+			# Update the counter
+			counter = counter + 1
+			# Send message if enough time has passed
+			if( counter == self._rateDiff):
+				if(not self._counterClockWiseTurn.StateCaptured):
+					self._counterClockWiseTurn.CaptureState([self._roll,self._pitch,self._yaw], angle)
+				self.UpdateMotorSpeed(self._counterClockWiseTurn.UpdateState([self._roll,self._pitch,self._yaw]))
+				counter = 0 
 		
 	def ShutDown(self):
 		# Tell the IMU process to exits

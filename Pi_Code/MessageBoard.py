@@ -53,6 +53,7 @@ class MessageBoard:
 			self.SendSpeedPacket("RM-",speed = int(speed*100))
 			
 	def SendServoAnglePacket(self, angle):
+		return # RETURN
 		angle = int(angle)
 		if( angle > 170 ):
 			angle = 170 
