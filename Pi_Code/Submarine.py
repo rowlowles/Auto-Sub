@@ -8,7 +8,7 @@ from MessageBoard import MessageBoard
 from MaintainForward import MaintainForward
 from ClockWiseTurn import ClockWiseTurn
 from CounterClockWiseTurn import CounterClockWiseTurn
-from Controller_Operations import controller_Ops
+from Controller_Operations import controllerOps
 from time import sleep,time
 SmallChange = 1e-1
 
@@ -37,7 +37,7 @@ class Submarine:
 		# Create the depth sensor object
 		self.depthSensor = SubDepthSensor(self._messageBoard._DepthFile, self.depthChildConn, SaveSensorData)
 		# Create the joystick object
-		self.joystick = controller_Ops(self._messageBoard._joystickFile, self.controllerConn, SaveSensorData)
+		self.joystick = controllerOps(self._messageBoard._joystickFile, self.controllerConn, SaveSensorData)
 		# Create the Maintain Forward object
 		self._maintainForward = MaintainForward()
 		# Create a clockwise turn object
@@ -81,8 +81,8 @@ class Submarine:
 			if type(message) is tuple:
 				# This means we have motor controls
 				# Speed and bool:Is Forward
-				self._messageBoard.SendLeftSpeedPacket(message[0],(message[0]>0))
-				self._messageBoard.SendRightSpeedPacket(message[1],(message[1]>0))
+				self._messageBoard.SendLeftSpeedPacket(message[0],(message[0]>=0))
+				self._messageBoard.SendRightSpeedPacket(message[1],(message[1]>=0))
 			else:
 				# Must be a servo command
 				self._messageBoard.SendServoAnglePacket(angle)
