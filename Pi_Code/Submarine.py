@@ -1,12 +1,14 @@
 #This class is meant to control the motors and access sensor values
+import types
 from SubIMU import *
 from SubDepthSensor import * 
 from threading import Thread, Lock
 from multiprocessing import Process,Pipe
 from MessageBoard import MessageBoard
 from MaintainForward import MaintainForward
-from  ClockWiseTurn import ClockWiseTurn
-from  CounterClockWiseTurn import CounterClockWiseTurn
+from ClockWiseTurn import ClockWiseTurn
+from CounterClockWiseTurn import CounterClockWiseTurn
+from Controller_Operations import controller_Ops
 from time import sleep,time
 SmallChange = 1e-1
 
@@ -27,12 +29,15 @@ class Submarine:
 		# Create variables to control the message passing between processes 
 		self.IMUParnetConn, self.IMUChildConn = Pipe()
 		self.depthParnetConn, self.depthChildConn = Pipe()
+		self.controllerConn, self.controllerConn = Pipe()
 		# Make the message board
 		self._messageBoard = MessageBoard()
 		# Create the IMU object
 		self.IMU = SubIMU(self._messageBoard._IMUFile, self.IMUChildConn, SaveSensorData)
 		# Create the depth sensor object
 		self.depthSensor = SubDepthSensor(self._messageBoard._DepthFile, self.depthChildConn, SaveSensorData)
+		# Create the joystick object
+		self.joystick = controller_Ops(self._messageBoard._joystickFile, self.controllerConn, SaveSensorData)
 		# Create the Maintain Forward object
 		self._maintainForward = MaintainForward()
 		# Create a clockwise turn object
@@ -59,6 +64,7 @@ class Submarine:
 				self._YAccel = message[3]
 
 		# This method checks the IMU connection and update values
+
 	def UpdateDepth(self):
 		# Check if the Depth Sensor has posted a message
 		if(self.depthParnetConn.poll()):
@@ -67,7 +73,20 @@ class Submarine:
 				self._messageBoard.LogMessage(message)
 			else:
 				self._depth = message
-	
+
+	def UpdateJoystick(self):
+		# Check to see if Joystick sent a message
+		if(self.controllerConn.poll()):
+			message = self.controllerConn.recv()
+			if type(message) is tuple:
+				# This means we have motor controls
+				# Speed and bool:Is Forward
+				self._messageBoard.SendLeftSpeedPacket(message[0],(message[0]>0))
+				self._messageBoard.SendRightSpeedPacket(message[1],(message[1]>0))
+			else:
+				# Must be a servo command
+				self._messageBoard.SendServoAnglePacket(angle)
+
 	def CheckSerial(self):
 		if(self._messageBoard._sPort.inWaiting()):
 			message = self._messageBoard._sPort.readline()
@@ -109,6 +128,7 @@ class Submarine:
 		self.UpdateAngles()
 		self.UpdateDepth()
 		self.CheckSerial()
+
 		
 	# This will maintain a trajectory
 	def Forward (self, length):
