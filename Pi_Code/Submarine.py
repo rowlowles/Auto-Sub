@@ -140,6 +140,7 @@ class Submarine:
 		self.UpdateAngles()
 		self.UpdateDepth()
 		self.CheckSerial()
+		self.UpdateJoystick()
 
 	# This will maintain a trajectory
 	def Forward (self, length):
