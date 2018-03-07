@@ -8,7 +8,7 @@ from MessageBoard import MessageBoard
 from MaintainForward import MaintainForward
 from ClockWiseTurn import ClockWiseTurn
 from CounterClockWiseTurn import CounterClockWiseTurn
-from Controller_Operations import controllerOps
+from Controller_Operations import ControllerOps
 from time import sleep,time
 SmallChange = 1e-1
 
@@ -30,6 +30,8 @@ class Submarine:
 		self.IMUParnetConn, self.IMUChildConn = Pipe()
 		self.depthParnetConn, self.depthChildConn = Pipe()
 		self.controllerConn, self.controllerConn = Pipe()
+		# Create a variable to hold the state: stopped, auto, or manual controls
+		self._state = "stopped"
 		# Make the message board
 		self._messageBoard = MessageBoard()
 		# Create the IMU object
@@ -78,14 +80,24 @@ class Submarine:
 		# Check to see if Joystick sent a message
 		if(self.controllerConn.poll()):
 			message = self.controllerConn.recv()
-			if type(message) is tuple:
-				# This means we have motor controls
-				# Speed and bool:Is Forward
-				self._messageBoard.SendLeftSpeedPacket(message[0],(message[0]>=0))
-				self._messageBoard.SendRightSpeedPacket(message[1],(message[1]>=0))
-			else:
-				# Must be a servo command
-				self._messageBoard.SendServoAnglePacket(angle)
+			if (message):
+				if isinstance(message, tuple):
+					# This means we have motor controls
+					# Speed and bool:Is Forward
+					self._messageBoard.SendLeftSpeedPacket(message[0],(message[0]>=0))
+					self._messageBoard.SendRightSpeedPacket(message[1],(message[1]>=0))
+
+				if isinstance(message, int):
+					# Must be a servo command
+					self._messageBoard.SendServoAnglePacket(message)
+
+				if isinstance(message, str):
+					# Three possibilities: 'auto', 'manual', and 'stop' which toggle between the various modes
+					# 'auto' flag is autonomous operation of the sub
+					# 'manual' is control via the joystick
+					# 'stop' freezes all motion, no auto or manual action
+					# TODO: Determine a way of implementing these states.
+					self._state = message
 
 	def CheckSerial(self):
 		if(self._messageBoard._sPort.inWaiting()):
@@ -129,7 +141,6 @@ class Submarine:
 		self.UpdateDepth()
 		self.CheckSerial()
 
-		
 	# This will maintain a trajectory
 	def Forward (self, length):
 		self.UpdateSubState()
