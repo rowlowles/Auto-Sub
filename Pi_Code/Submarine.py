@@ -84,8 +84,8 @@ class Submarine:
 				if isinstance(message, tuple):
 					# This means we have motor controls
 					# Speed and bool:Is Forward
-					self._messageBoard.SendLeftSpeedPacket(message[0],(message[0]>=0))
-					self._messageBoard.SendRightSpeedPacket(message[1],(message[1]>=0))
+					self._messageBoard.SendLeftSpeedPacket(abs(message[0]), (message[0] <= 0))
+					self._messageBoard.SendRightSpeedPacket(abs(message[1]), (message[1] <= 0))
 
 				if isinstance(message, int):
 					# Must be a servo command
@@ -197,5 +197,6 @@ class Submarine:
 	def ShutDown(self):
 		# Tell the IMU process to exits
 		self.IMUParnetConn.send(False)
+		self.controllerConn.send(False)
 		self.depthParnetConn.send(False)
 		self._messageBoard.CloseBoard()

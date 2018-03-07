@@ -14,8 +14,6 @@ class MessageBoard:
 		self._IMUFile = open(self._FileBase+"_imu.csv","w") 
 		# Crate  a file to store Depth data
 		self._DepthFile = open(self._FileBase+"_depth.csv","w")
-		# Create a file to store joystick commands
-		self._joystickFile = open(self._FileBase+"_joystick.csv","w")
 		# Open the serial port to read serial data
 		self._sPort = serial.Serial('/dev/ttyACM0',1000000, timeout=0.01) # 10 milliseconds
 	

@@ -23,91 +23,91 @@ class ControllerOps:
         self.controller = pygame.joystick.Joystick(0)
         self.controller.init()
 
-        self.idle = False # TODO: Change idle to true and add state switching in the main Submarine script
-        # Currently we'll just skip right past the idle stage and right into the auto sub stage. Idle is intended to be
-		# where we click the "start" button on the joystick to begin the operation of the sub
+        self.idle = True
         self.read_stick = True
         self.autosub = True
 
-        # Get the properties of the joystick
-        # Not necessary currently, may be useful later
-        print("Found joystick: " + self.controller.get_name())
-        buttons = self.controller.get_numbuttons()
-        axes = self.controller.get_numaxes()
-        balls = self.controller.get_numballs()
-        hats = self.controller.get_numhats()
+        dataFile.write("Found joystick: " + self.controller.get_name())
+
         p = Process(target = self.getStickPosition, args = (dataFile, connection, SaveSensorData))
         p.start()
 
+
     def getStickPosition(self, connection, dataFile, SaveSensorData):
+        readController = True
+        while (readController):
 
-        while self.idle:
-            # Start button code. Hold in idle until button 6 is pressed, and then send the response to the main loop
-            pygame.event.pump()
-            start = self.controller.get_button(6)
-            if start:
-                connection.send("auto")
-                self.idle = False
+            while self.idle:
+                # Start button code. Hold in idle until button 6 is pressed, and then send the response to the main loop
+                pygame.event.pump()
+                start = self.controller.get_button(6)
+                if start:
+                    connection.send("auto")
+                    self.idle = False
 
-        while self.autosub:
-            # If we press button 5, we will switch to manual controls.
-			# Otherwise, it will just keep looping in here.
-            pygame.event.pump()
-            manual = self.controller.get_button(5)
-            if manual:
-                connection.send("manual")
-                self.autosub = False
-                self.read_stick = True
+            while self.autosub:
+                # If we press button 5, we will switch to manual controls.
+                # Otherwise, it will just keep looping in here.
+                pygame.event.pump()
+                manual = self.controller.get_button(5)
+                if manual:
+                    connection.send("manual")
+                    self.autosub = False
+                    self.read_stick = True
 
-        while self.read_stick:
-            # Update states
-            pygame.event.pump()
+            while self.read_stick:
+                # Update states
+                pygame.event.pump()
 
-            # Hardcoded for now, will fix later.
-            threshhold = .3
+                # Hardcoded for now, will fix later.
+                threshhold = .3
 
-            roll = self.controller.get_axis(0)
-            pitch = self.controller.get_axis(1)
-            throttle = self.controller.get_axis(2)
-            # yaw = controller.get_axis(3) (Not used at the moment)
-            trigger = self.controller.get_button(0)
-            stop = self.controller.get_button(6)
-            kill = self.controller.get_button(1)
-            auto_revert = self.controller.get_button(5)
+                roll = self.controller.get_axis(0)
+                pitch = self.controller.get_axis(1)
+                throttle = (self.controller.get_axis(2))*100
+                # yaw = controller.get_axis(3) (Not used at the moment)
+                trigger = self.controller.get_button(0)
+                stop = self.controller.get_button(6)
+                kill = self.controller.get_button(1)
+                auto_revert = self.controller.get_button(5)
 
-            # Now that we have pitch/roll/throttle/yaw values, we can start using them
-            # Send a tuple (x,y) where x and y are the speeds for the left and right motors respectively
+                # Now that we have pitch/roll/throttle/yaw values, we can start using them
+                # Send a tuple (x,y) where x and y are the speeds for the left and right motors respectively
 
-            if kill:
-                # Shut down both the motors
-                connection.send((0, 0))
+                if kill:
+                    # Shut down both the motors
+                    connection.send((0, 0))
 
-            elif trigger:
-                # Set the speed to throttle and sent it to both motors
-                connection.send((throttle, throttle))
+                if trigger:
+                    # Set the speed to throttle and sent it to both motors
+                    connection.send((throttle, throttle))
 
-            elif abs(pitch) > threshhold:
-                # |Max pitch| is ~.6, and the max angle we should have for our fins is 20 deg (from Stubley)
-                # Divide the pitch value by 3, so our min dive angle for our fins will be 10 deg, and max will be 20
-                angle = pitch/3
-                connection.send(angle)
+                if abs(pitch) > threshhold:
+                    # |Max pitch| is ~.6, and the max angle we should have for our fins is 20 deg (from Stubley)
+                    # Divide the pitch value by 3, so our min dive angle for our fins will be 10 deg, and max will be 20
+                    angle = pitch/3
+                    connection.send(angle)
 
-            elif (not trigger) and (abs(roll) > threshhold):
-                # Since we can't roll, I am mapping roll to yaw controls. Roll axis has better response on the joystick
-                if roll > 0:
-                    # If roll is positive, set the left motor to active and right to off
-                    connection.send((throttle, 0))
-                else:
-                    # If roll is negative, set left to zero and right to active
-                    connection.send((0, throttle))
+                if (not trigger) and (abs(roll) > threshhold):
+                    # Since we can't roll, I am mapping roll to yaw controls. Roll axis has better response on the joystick
+                    if roll > 0:
+                        # If roll is positive, set the left motor to active and right to off
+                        connection.send((throttle, 0))
+                    else:
+                        # If roll is negative, set left to zero and right to active
+                        connection.send((0, throttle))
 
-            elif auto_revert:
-                # If we press button 5, revert to automatic controls.
-                connection.send("auto")
-                self.autosub = True
-                break
+                if auto_revert:
+                    # If we press button 5, revert to automatic controls.
+                    connection.send("auto")
+                    self.autosub = True
+                    break
 
-            elif stop:
-                connection.send("stop")
-                self.idle = True
-                break
+                if stop:
+                    connection.send("stop")
+                    self.idle = True
+                    break
+
+            if (connection.poll()):
+                readController = connection.recv()
+                dataFile.close()
