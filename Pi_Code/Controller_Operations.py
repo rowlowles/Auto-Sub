@@ -1,5 +1,6 @@
 from multiprocessing import Process
 import pygame
+import time
 
 # Axes legend:
 # Axes 0: Roll (right is positive, left is negative)
@@ -15,52 +16,49 @@ import pygame
 
 class ControllerOps:
 
-    def __init__(self, dataFile, connection, SaveSensorData):
+    def __init__(self, dataFile, connection):
         # We need to display a window in order to read joystick inputs.
+        # dataFile.write("Found joystick: " + self.controller.get_name() + "\n")
+        p = Process(target=self.getStickPosition, args=(dataFile, connection))
+        p.start()
+
+    def getStickPosition(self, dataFile, connection):
         pygame.joystick.init()
         screen = pygame.display.set_mode((10, 10))
 
         self.controller = pygame.joystick.Joystick(0)
         self.controller.init()
 
-        self.idle = True
-        self.read_stick = True
-        self.autosub = True
-
-        dataFile.write("Found joystick: " + self.controller.get_name())
-
-        p = Process(target = self.getStickPosition, args = (dataFile, connection, SaveSensorData))
-        p.start()
-
-
-    def getStickPosition(self, connection, dataFile, SaveSensorData):
+        self.state = "idle"
         readController = True
-        while (readController):
+        while readController:
 
-            while self.idle:
+            if self.state == "idle":
                 # Start button code. Hold in idle until button 6 is pressed, and then send the response to the main loop
                 pygame.event.pump()
                 start = self.controller.get_button(6)
                 if start:
                     connection.send("auto")
-                    self.idle = False
+                    self.state = "auto"
 
-            while self.autosub:
+            if self.state == "auto":
                 # If we press button 5, we will switch to manual controls.
                 # Otherwise, it will just keep looping in here.
                 pygame.event.pump()
                 manual = self.controller.get_button(5)
                 if manual:
                     connection.send("manual")
-                    self.autosub = False
-                    self.read_stick = True
+                    self.state = "manual"
+                    while manual:
+                        pygame.event.pump()
+                        manual = self.controller.get_button(5)
 
-            while self.read_stick:
+            if self.state == "manual":
                 # Update states
                 pygame.event.pump()
-
                 # Hardcoded for now, will fix later.
                 threshhold = .3
+                maxValApprox = .8
 
                 roll = self.controller.get_axis(0)
                 pitch = self.controller.get_axis(1)
@@ -73,7 +71,6 @@ class ControllerOps:
 
                 # Now that we have pitch/roll/throttle/yaw values, we can start using them
                 # Send a tuple (x,y) where x and y are the speeds for the left and right motors respectively
-
                 if kill:
                     # Shut down both the motors
                     connection.send((0, 0))
@@ -89,24 +86,37 @@ class ControllerOps:
                     connection.send(angle)
 
                 if (not trigger) and (abs(roll) > threshhold):
-                    # Since we can't roll, I am mapping roll to yaw controls. Roll axis has better response on the joystick
+                    # Since we can't roll, I am mapping roll to yaw controls. Roll axis has better signals
+                    # The more the joystick is moved, the faster the turn speed
+                    # Scales from ~50% to ~0% speed on the opposite motor
+                    turnSpeed = (abs((abs(roll)-maxValApprox))*throttle)
                     if roll > 0:
                         # If roll is positive, set the left motor to active and right to off
-                        connection.send((throttle, 0))
+                        connection.send((throttle, turnSpeed))
                     else:
                         # If roll is negative, set left to zero and right to active
-                        connection.send((0, throttle))
+                        connection.send((turnSpeed, throttle))
 
                 if auto_revert:
                     # If we press button 5, revert to automatic controls.
                     connection.send("auto")
-                    self.autosub = True
+                    self.state = "auto"
+                    while auto_revert:
+                        # Wait for button to be released
+                        pygame.event.pump()
+                        auto_revert = self.controller.get_button(5)
                     break
 
                 if stop:
                     connection.send("stop")
-                    self.idle = True
+                    self.state = "idle"
+                    while stop:
+                        # Wait for button to be released
+                        pygame.event.pump()
+                        stop = self.controller.get_button(6)
                     break
+
+                time.sleep(.01)
 
             if (connection.poll()):
                 readController = connection.recv()
