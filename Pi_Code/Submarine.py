@@ -30,7 +30,7 @@ class Submarine:
 		self.depthParnetConn, self.depthChildConn = Pipe()
 		self.controllerParentConn, self.controllerChildConn = Pipe()
 		# Create a variable to hold the state: stopped, auto, or manual controls
-		self._state = "stopped"
+		self._state = "idle"
 		# Make the message board
 		self._messageBoard = MessageBoard()
 		# Create the IMU object
