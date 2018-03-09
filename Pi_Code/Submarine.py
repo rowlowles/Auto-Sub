@@ -6,6 +6,7 @@ from threading import Thread, Lock
 from multiprocessing import Process,Pipe
 from MessageBoard import MessageBoard
 from MaintainForward import MaintainForward
+from Dive import Dive
 from  ClockWiseTurn import ClockWiseTurn
 from  CounterClockWiseTurn import CounterClockWiseTurn
 from time import sleep,time
@@ -34,6 +35,8 @@ class Submarine:
 		# self.depthSensor = SubDepthSensor(self._messageBoard._DepthFile, self.depthChildConn, SaveSensorData)
 		# Create the Maintain Forward object
 		self._maintainForward = MaintainForward()
+		# Create the dive object
+		self._dive = Dive()
 		# Create a clockwise turn object
 		self._clockWiseTurn = ClockWiseTurn()
 		# Create a counterclockwise turn object
@@ -124,7 +127,15 @@ class Submarine:
 					self._clockWiseTurn.CaptureState([self._roll,self._pitch,self._yaw],angle)
 				self.UpdateMotorSpeed(self._clockWiseTurn.UpdateState([self._roll,self._pitch,self._yaw]))
 				counter = 0 
-				
+	
+	def Dive(self, length):
+		self.UpdateMotorSpeed([None, None, None, None, 100, False])
+		self.Forward(length)
+	
+	def Rise(self, length):
+		self.UpdateMotorSpeed([None, None, None, None, 100, True])
+		self.Forward(length)
+	
 	def CounterClockWiseTurn(self, angle):
 		self.UpdateSubState()
 		counter = 0

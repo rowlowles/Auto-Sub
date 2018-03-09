@@ -4,7 +4,9 @@ from Submarine import *
 sub = Submarine(False)
 
 # Move forward for 10 seconds
-sub.Forward(30)
+sub.Dive(5)
+sleep(5)
+sub.Rise(7)
 
 # Turn ClockWise
 # sub.ClockWiseTurn(60)
@@ -17,7 +19,7 @@ sub.Forward(30)
 # sleep(10)
 
 # Stop the motor
-sub.UpdateMotorSpeed([0,True,0,True,sub._servoAngle])
+sub.UpdateMotorSpeed([0,True,0,True,0,True])
 print("Turning Off")
 sleep(2)
 
