@@ -48,5 +48,5 @@ class SubDepthSensor:
 					dataFile.write( str(time.time()) + "," + str(self.currentDepth) + "\n") 
 			
 			if(connection.poll()):
-				readSensor = connection.recv()
+				readSensor = False
 				dataFile.close()
