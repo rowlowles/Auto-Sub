@@ -1,8 +1,8 @@
-from Pi_Code import Submarine
+from Pi_Code import Controller_Operations, Submarine
+from multiprocessing import Pipe, process
 import time
-#Test script to see if the controller works. No
 
-time.sleep(10)
+time.sleep(5)
 
 sub = Submarine.Submarine(False)
 
@@ -14,3 +14,14 @@ while True:
 		sub.Forward(15)
 	if sub._state == "manual":
 		sub.UpdateJoystick()
+
+# time.sleep(4)
+
+# connectionParent, connectionChild = Pipe()
+# if __name__ == "__main__":
+# 	controller = Controller_Operations.ControllerOps("blah", connectionChild)
+#
+# 	while True:
+# 		if connectionParent.poll():
+# 			message = connectionParent.recv()
+# 			print(message)
