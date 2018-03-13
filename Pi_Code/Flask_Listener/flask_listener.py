@@ -27,13 +27,13 @@ def display():
         print(command[0])
 
     elif command[0] == 'srv' and sub._state == "manual":
-        packet = [None, None, None, None, int(command[1])]
+        packet = [None, None, None, None, float(command[1])]
         sub.UpdateMotorSpeed(packet)
         #print(packet)
 
     elif sub._state == "manual":
-        com0 = int(command[0])
-        com1 = int(command[1])
+        com0 = float(command[0])
+        com1 = float(command[1])
         left_forward = com0 <= 0
         right_forward = com1 <= 0
         packet = [abs(com0), left_forward, abs(com1), right_forward, None]
