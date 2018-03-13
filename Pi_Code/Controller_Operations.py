@@ -73,17 +73,17 @@ class ControllerOps:
                 # Send a tuple (x,y) where x and y are the speeds for the left and right motors respectively
                 if kill:
                     # Shut down both the motors
-                    connection.send((0, 0))
+                    connection.send(0, 0)
 
                 if trigger:
                     # Set the speed to throttle and sent it to both motors
-                    connection.send((throttle, throttle))
+                    connection.send(str(throttle)+','+str(throttle))
 
                 if abs(pitch) > threshhold:
                     # |Max pitch| is ~.6, and the max angle we should have for our fins is 20 deg (from Stubley)
                     # Divide the pitch value by 3, so our min dive angle for our fins will be 10 deg, and max will be 20
                     angle = pitch/3
-                    connection.send(angle)
+                    connection.send("srv,"+str(angle))
 
                 if (not trigger) and (abs(roll) > threshhold):
                     # Since we can't roll, I am mapping roll to yaw controls. Roll axis has better signals
@@ -92,10 +92,10 @@ class ControllerOps:
                     turnSpeed = (abs((abs(roll)-maxValApprox))*throttle)
                     if roll > 0:
                         # If roll is positive, set the left motor to active and right to off
-                        connection.send((throttle, turnSpeed))
+                        connection.send(str(throttle)+','+str(turnSpeed))
                     else:
                         # If roll is negative, set left to zero and right to active
-                        connection.send((turnSpeed, throttle))
+                        connection.send(str(turnSpeed)+','+ str(throttle))
 
                 if auto_revert:
                     # If we press button 5, revert to automatic controls.
@@ -108,7 +108,7 @@ class ControllerOps:
                     break
 
                 if stop:
-                    connection.send("stop")
+                    connection.send("idle")
                     self.state = "idle"
                     while stop:
                         # Wait for button to be released
@@ -116,7 +116,7 @@ class ControllerOps:
                         stop = self.controller.get_button(6)
                     break
 
-                time.sleep(.01)
+                time.sleep(.1)
 
             if (connection.poll()):
                 readController = connection.recv()
