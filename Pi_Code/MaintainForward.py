@@ -1,61 +1,71 @@
 # This keep the sub moving forward
 import time
+import math
 
 class MaintainForward:
 	def __init__(self):
 		self.baseSpeed = 50
 		self.accelConverstion = 0
 		self.maxBump = 50
-		self.maxAngleChange = 5
-		self.maxPitch = 30
-		self.maxDeflection = 20
+		self.maxAngleChange = 15
+		self.maxPitch = 15
+		self.maxDeflection = 15
 		self.StateCaptured = False
+		self.Vx = 0.01
 		
-	def CaptureState (self, angles, depth, servoAngle):
+	def CaptureState (self, angles, depth):
 		self.roll  = angles[0]
 		self.pitch = angles[1]
 		self.yaw   = angles[2]
-		self.YAccel = angles[3]
+		self.TargetY = angles[3]
 		self.TargetYaw = self.yaw
-		self.TargetYAccel = self.YAccel
 		self.TargetPitch = self.pitch
 		self.StateCaptured = True
-		self.servoAngle = servoAngle
 	
-	def UpdateState (self, angles, depth, servoAngle):			
+	def UpdateState (self, angles, depth):			
 		self.roll  = angles[0]
 		self.pitch = angles[1]
 		self.yaw   = angles[2]
-		self.YAccel = angles[3]
+		self.yPos  = angles[3]
 		
-		diffYAccel = abs(self.YAccel - self.TargetYAccel)
+		# Correct for drift in y
+		# diffY = self.TargetY - self.yPos
+		# diffInYaw = math.degrees(math.atan2(abs(diffY), self.Vx))
+		# if(diffY > 0):
+			# self.TargetPitch = self.TargetPitch + diffInYaw
+		# else:
+			# self.TargetPitch = self.TargetPitch - diffInYaw
+		
 		diffYaw = abs(self.yaw - self.TargetYaw)
-		diffPitch= abs(self.pitch - self.TargetPitch)
+		diffPitch = 0 # abs(self.pitch - self.TargetPitch)
+		servoAngle = None
+		servoDirection = True
 		
 		# Correct for pitch changes
 		if( diffPitch > 1 ):
-			angleBump = self.maxAngleChange  * float(diffPitch)  / self.maxPitch
+			angleBump = 100 * float(diffPitch)  / self.maxPitch
+			servoAngle = angleBump
 			if( self.pitch > self.TargetPitch ):
 				# We are going down, turn us up 
-				servoAngle = servoAngle - angleBump
+				servoDirection = False
 			else:
 				# We are going up, turn us down 
-				servoAngle = servoAngle + angleBump
+				servoDirection = True
 		
 		# Correct for yaw changes
 		if( diffYaw > 270 ):
 			diffYaw = 360 - diffYaw
 			
-		if( diffYaw > 1 or diffYAccel > 0.05):
+		if( diffYaw > 1 ):
 			# Take corrective actions
-			speedBump = min( self.maxBump, self.maxBump * ( diffYaw + diffYAccel * self.accelConverstion) / self.maxDeflection )
-			
+			speedBump = min( self.maxBump, self.maxBump * diffYaw  / self.maxDeflection )
+			print( speedBump )
 			if( self.yaw > self.TargetYaw):
 				# We are turning clockwise, make the right motor stronger
-				return[self.baseSpeed - speedBump, True, self.baseSpeed + speedBump, True, servoAngle]
+				return[self.baseSpeed - speedBump, True, self.baseSpeed + speedBump, True, servoAngle, servoDirection]
 				
 			else:
 				# We are turning counter clockwise, make the left motor stronger
-				return[self.baseSpeed + speedBump, True, self.baseSpeed - speedBump, True, servoAngle]
+				return[self.baseSpeed + speedBump, True, self.baseSpeed - speedBump, True, servoAngle, servoDirection]
 		
-		return[self.baseSpeed, True, self.baseSpeed, True, servoAngle]
+		return[self.baseSpeed, True, self.baseSpeed, True, 0, False]
