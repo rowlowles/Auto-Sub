@@ -6,9 +6,10 @@ from threading import Thread, Lock
 from multiprocessing import Process,Pipe
 from MessageBoard import MessageBoard
 from MaintainForward import MaintainForward
-from Dive import Dive
-from  ClockWiseTurn import ClockWiseTurn
-from  CounterClockWiseTurn import CounterClockWiseTurn
+from MaintainDepth import MaintainDepth
+from GoToDepth import GoToDepth
+from ClockWiseTurn import ClockWiseTurn
+from CounterClockWiseTurn import CounterClockWiseTurn
 from time import sleep,time
 SmallChange = 1e-1
 
@@ -31,18 +32,32 @@ class Submarine:
 		self._SubMotors = SubMotors()
 		# Create the IMU object
 		self.IMU = SubIMU(self._messageBoard._IMUFile, self.IMUChildConn, SaveSensorData)
+		# Check if we were able to connect to the IMU
+		if(self.IMU == None):
+			# Don't bother updating the angles we don't have an IMU 
+			self._upateAngles = False
+		else:
+			self._upateAngles = True
 		# Create the depth sensor object
-		# self.depthSensor = SubDepthSensor(self._messageBoard._DepthFile, self.depthChildConn, SaveSensorData)
+		self.depthSensor = SubDepthSensor(self._messageBoard._DepthFile, self.depthChildConn, SaveSensorData)
+		# Check if we were able to connect to the depth sensor
+		if(self.depthSensor == None):
+			# Don't bother updating the depth we don't have a sensor 
+			self._upateDepth = False
+		else:
+			self._upateDepth = True
 		# Create the Maintain Forward object
 		self._maintainForward = MaintainForward()
+		# Create the Maintain Depth object
+		self._maintainDepth  = MaintainDepth()
 		# Create the dive object
-		self._dive = Dive()
+		self._goToDepth = GoToDepth()
 		# Create a clockwise turn object
 		self._clockWiseTurn = ClockWiseTurn()
 		# Create a counterclockwise turn object
 		self._counterClockWiseTurn = CounterClockWiseTurn()
 		# Create the timing variables
-		self._rateDiff = 75
+		self._rateDiff = 25
 		# Create a method to leave
 		self._exit = False
 		
@@ -90,14 +105,20 @@ class Submarine:
 			self._SubMotors.SetServoAngle(Packet[4], Packet[5])
 			
 	def UpdateSubState(self):
-		self.UpdateAngles()
-		self.UpdateDepth()
+		if(self._upateAngles):
+			self.UpdateAngles()
+		if(self._upateDepth):
+			self.UpdateDepth()
 		
 	# This will maintain a trajectory
 	def Forward (self, length):
 		self.UpdateSubState()
 		counter = 0
 		startTime = time()
+		
+		# Capture the state of the submarine
+		self._maintainForward.CaptureState([self._roll,self._pitch,self._yaw,self._YPos], self._depth)
+		self._maintainDepth.CaptureState  ([self._roll,self._pitch,self._yaw,self._YPos], self._depth)
 		
 		while( time() - startTime < length):
 			# Update the submarine state
@@ -106,11 +127,43 @@ class Submarine:
 			counter = counter + 1
 			# Send message if enough time has passed
 			if( counter == self._rateDiff):
-				if(not self._maintainForward.StateCaptured):
-					self._maintainForward.CaptureState([self._roll,self._pitch,self._yaw,self._YPos], self._depth)
+				# This will correct for an X-Y Variation 
 				self.UpdateMotorSpeed(self._maintainForward.UpdateState([self._roll,self._pitch,self._yaw,self._YPos], self._depth))
-				counter = 0 
-				
+				# This will correct for an Z Variation
+				self.UpdateMotorSpeed(self._maintainDepth.UpdateState([self._roll,self._pitch,self._yaw,self._YPos], self._depth))
+				# Reset the counter
+				counter = 0
+	
+	def ChangeDepth(self, depth):
+		self.UpdateSubState()
+		counter = 0
+		startTime = time()
+		
+		# Capture the state of the submarine
+		self._maintainForward.CaptureState([self._roll,self._pitch,self._yaw,self._YPos], self._depth)
+		self._goToDepth.CaptureState (self._depth, depth)
+		
+		# Set a flag to notify us when we reach our desired depth 
+		reachedDepth = False
+		
+		while( not reachedDepth ):
+			# Update the submarine state
+			self.UpdateSubState()
+			# Update the counter
+			counter = counter + 1
+			# Send message if enough time has passed
+			if( counter == self._rateDiff):
+				# This will correct for an X-Y Variation 
+				self.UpdateMotorSpeed(self._maintainForward.UpdateState([self._roll,self._pitch,self._yaw,self._YPos], self._depth))
+				# Set the angle of attack so we can dive
+				response = self._goToDepth.UpdateState(self._depth)
+				if(response != False):
+					self.UpdateMotorSpeed(response)
+				else:
+					reachedDepth = True
+				# Reset the counter
+				counter = 0
+
 	def ClockWiseTurn (self, angle):
 		self.UpdateSubState()
 		counter = 0
@@ -127,15 +180,7 @@ class Submarine:
 					self._clockWiseTurn.CaptureState([self._roll,self._pitch,self._yaw],angle)
 				self.UpdateMotorSpeed(self._clockWiseTurn.UpdateState([self._roll,self._pitch,self._yaw]))
 				counter = 0 
-	
-	def Dive(self, length):
-		self.UpdateMotorSpeed([None, None, None, None, 100, False])
-		self.Forward(length)
-	
-	def Rise(self, length):
-		self.UpdateMotorSpeed([None, None, None, None, 100, True])
-		self.Forward(length)
-	
+				
 	def CounterClockWiseTurn(self, angle):
 		self.UpdateSubState()
 		counter = 0

@@ -95,18 +95,19 @@ class SubMotors:
 		
 		# Translate speed into microseconds
 		if(forward):
-			self._LeftCurrentSpeed = self._LeftUpperStopValue + (self._LeftForwardLimit - self._LeftUpperStopValue) * self.FixSpeed(speed)
+			self._LeftCurrentSpeed = self._LeftLowerStopValue - (self._LeftLowerStopValue - self._LeftReverseLimit) * self.FixSpeed(speed)
 		else:
-			self._LeftCurrentSpeed = self._LeftLowerStopValue - (self._LeftLowerStopValue - self._LeftReverseLimit ) * self.FixSpeed(speed)
+			self._LeftCurrentSpeed = self._LeftUpperStopValue + (self._LeftForwardLimit - self._LeftUpperStopValue) * self.FixSpeed(speed)
+			
 		# Write microseconds to the left channel 
 		self.WriteValueToChannel(self._LeftCurrentSpeed, self._LeftMotorChannel)
 		
 	def SetRightSpeed(self, speed, forward):
 		# Translate speed into microseconds
 		if(forward):
-			self._RightCurrentSpeed = self._RightLowerStopValue - (self._RightLowerStopValue - self._RightReverseLimit) * self.FixSpeed(speed)
-		else:
 			self._RightCurrentSpeed = self._RightUpperStopValue + (self._RightForwardLimit - self._RightUpperStopValue) * self.FixSpeed(speed)
+		else:
+			self._RightCurrentSpeed = self._RightLowerStopValue - (self._RightLowerStopValue - self._RightReverseLimit) * self.FixSpeed(speed)
 		
 		# Write microseconds to the left channel 
 		self.WriteValueToChannel(self._RightCurrentSpeed, self._RightMotorChannel)
