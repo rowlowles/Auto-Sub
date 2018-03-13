@@ -21,6 +21,9 @@ class SubIMU:
 		self.IMUSettings = RTIMU.Settings(SETTINGS_FILE)
 		# Create the IMU object
 		self._IMU = RTIMU.RTIMU(self.IMUSettings)
+		# Set the local waterloo gravity constant
+		self.GravityConstant = 9.81 
+		# Check if we are able to power up 
 		if not self._IMU.IMUInit():
 			# We were unable to turn on, we should not start the process
 			return None
@@ -146,12 +149,10 @@ class SubIMU:
 				R = np.matrix([[c, -sin], [sin, c]])
 				
 				# Find the local position
-				xPosLocal = XAccel * 9.81 * delT * delT
-				YPosLocal = YAccel * 9.81 * delT * delT
+				xPosLocal = XAccel * self.GravityConstant * delT * delT
+				YPosLocal = YAccel * self.GravityConstant * delT * delT
 				
 				[xPos, yPos] = R * np.matrix([[xPosLocal],[YPosLocal]]);
-				
-				yPos = float(yPos)
 				self._Ypos = self._Ypos + yPos
 				
 				connection.send([0, pitch, heading, self._Ypos])
@@ -161,6 +162,5 @@ class SubIMU:
 					dataFile.flush()
 				
 				if(connection.poll()):
-					print("Here fuck")
 					readIMU = False
 					dataFile.close()

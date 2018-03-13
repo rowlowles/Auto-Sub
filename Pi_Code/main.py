@@ -1,12 +1,12 @@
 from Submarine import *
 
 # Create the board
-sub = Submarine(False)
+sub = Submarine(True)
 
-# Move forward for 10 seconds
-sub.Dive(5)
-sleep(5)
-sub.Rise(7)
+sub.Forward(5)
+
+# Set the depth to 10
+# sub.ChangeDepth(10)
 
 # Turn ClockWise
 # sub.ClockWiseTurn(60)
