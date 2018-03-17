@@ -57,66 +57,76 @@ class ControllerOps:
                 # Update states
                 pygame.event.pump()
                 # Hardcoded for now, will fix later.
-                threshhold = .3
+                threshhold = .2
                 maxValApprox = .8
 
                 roll = self.controller.get_axis(0)
                 pitch = self.controller.get_axis(1)
-                throttle = (self.controller.get_axis(2))*100
+                throttle = (((self.controller.get_axis(2)+.7)/1.2)*100)-3
+                if throttle < 5:
+                    throttle = 0
+                if throttle > 95:
+                    throttle = 100
+
                 # yaw = controller.get_axis(3) (Not used at the moment)
                 trigger = self.controller.get_button(0)
-                stop = self.controller.get_button(6)
+                # stop = self.controller.get_button(6)
                 kill = self.controller.get_button(1)
-                auto_revert = self.controller.get_button(5)
+                # auto_revert = self.controller.get_button(5)
 
                 # Now that we have pitch/roll/throttle/yaw values, we can start using them
                 # Send a tuple (x,y) where x and y are the speeds for the left and right motors respectively
                 if kill:
                     # Shut down both the motors
-                    connection.send((0, 0))
+                    connection.send("0, 0")
+                    connection.send("srv,0")
+                    time.sleep(1)
 
                 if trigger:
                     # Set the speed to throttle and sent it to both motors
-                    connection.send((throttle, throttle))
+                    connection.send(str(throttle)+','+str(throttle))
 
                 if abs(pitch) > threshhold:
                     # |Max pitch| is ~.6, and the max angle we should have for our fins is 20 deg (from Stubley)
                     # Divide the pitch value by 3, so our min dive angle for our fins will be 10 deg, and max will be 20
                     angle = pitch/3
-                    connection.send(angle)
+                    connection.send("srv,"+str(angle*100))
 
                 if (not trigger) and (abs(roll) > threshhold):
                     # Since we can't roll, I am mapping roll to yaw controls. Roll axis has better signals
                     # The more the joystick is moved, the faster the turn speed
                     # Scales from ~50% to ~0% speed on the opposite motor
                     turnSpeed = (abs((abs(roll)-maxValApprox))*throttle)
+                    if turnSpeed < 15:
+                        turnSpeed = 0
                     if roll > 0:
                         # If roll is positive, set the left motor to active and right to off
-                        connection.send((throttle, turnSpeed))
+                        connection.send(str(throttle)+','+str(turnSpeed))
                     else:
                         # If roll is negative, set left to zero and right to active
-                        connection.send((turnSpeed, throttle))
+                        connection.send(str(turnSpeed)+','+ str(throttle))
 
-                if auto_revert:
-                    # If we press button 5, revert to automatic controls.
-                    connection.send("auto")
-                    self.state = "auto"
-                    while auto_revert:
-                        # Wait for button to be released
-                        pygame.event.pump()
-                        auto_revert = self.controller.get_button(5)
-                    break
-
-                if stop:
-                    connection.send("stop")
-                    self.state = "idle"
-                    while stop:
-                        # Wait for button to be released
-                        pygame.event.pump()
-                        stop = self.controller.get_button(6)
-                    break
-
+                # if auto_revert:
+                #     # If we press button 5, revert to automatic controls.
+                #     connection.send("auto")
+                #     self.state = "auto"
+                #     while auto_revert:
+                #         # Wait for button to be released
+                #         pygame.event.pump()
+                #         auto_revert = self.controller.get_button(5)
+                #     break
+				#
+                # if stop:
+                #     connection.send("idle")
+                #     self.state = "idle"
+                #     while stop:
+                #         # Wait for button to be released
+                #         pygame.event.pump()
+                #         stop = self.controller.get_button(6)
+                #     break
+                pygame.event.clear()
                 time.sleep(.01)
+
 
             if (connection.poll()):
                 readController = connection.recv()

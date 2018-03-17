@@ -6,10 +6,11 @@ from threading import Thread, Lock
 from multiprocessing import Process,Pipe
 from MessageBoard import MessageBoard
 from MaintainForward import MaintainForward
-from Controller_Operations import ControllerOps
-from Dive import Dive
-from  ClockWiseTurn import ClockWiseTurn
-from  CounterClockWiseTurn import CounterClockWiseTurn
+from MaintainDepth import MaintainDepth
+from GoToDepth import GoToDepth
+from ClockWiseTurn import ClockWiseTurn
+from CounterClockWiseTurn import CounterClockWiseTurn
+from flask_listener import portListener
 from time import sleep,time
 SmallChange = 1e-1
 
@@ -27,28 +28,40 @@ class Submarine:
 		self.IMUParnetConn, self.IMUChildConn = Pipe()
 		self.depthParnetConn, self.depthChildConn = Pipe()
 		self.controllerParentConn, self.controllerChildConn = Pipe()
-		# Create a variable to hold the state: stopped, auto, or manual controls
-		self._state = "idle"
 		# Make the message board
 		self._messageBoard = MessageBoard()
 		# Create the object
 		self._SubMotors = SubMotors()
+		# Create the flask listener object
+		self._controllerListener = portListener(self.controllerChildConn)
 		# Create the IMU object
 		self.IMU = SubIMU(self._messageBoard._IMUFile, self.IMUChildConn, SaveSensorData)
+		# Check if we were able to connect to the IMU
+		if(self.IMU == None):
+			# Don't bother updating the angles we don't have an IMU 
+			self._upateAngles = False
+		else:
+			self._upateAngles = True
 		# Create the depth sensor object
-    # self.depthSensor = SubDepthSensor(self._messageBoard._DepthFile, self.depthChildConn, SaveSensorData)
-		# Create the joystick object
-		self.joystick = controllerOps(self._messageBoard._JoystickFile,self.controllerChildConn)
+		self.depthSensor = SubDepthSensor(self._messageBoard._DepthFile, self.depthChildConn, SaveSensorData)
+		# Check if we were able to connect to the depth sensor
+		if(self.depthSensor == None):
+			# Don't bother updating the depth we don't have a sensor 
+			self._upateDepth = False
+		else:
+			self._upateDepth = True
 		# Create the Maintain Forward object
 		self._maintainForward = MaintainForward()
+		# Create the Maintain Depth object
+		self._maintainDepth  = MaintainDepth()
 		# Create the dive object
-		self._dive = Dive()
+		self._goToDepth = GoToDepth()
 		# Create a clockwise turn object
 		self._clockWiseTurn = ClockWiseTurn()
 		# Create a counterclockwise turn object
 		self._counterClockWiseTurn = CounterClockWiseTurn()
 		# Create the timing variables
-		self._rateDiff = 75
+		self._rateDiff = 25
 		# Create a method to leave
 		self._exit = False
 		
@@ -67,6 +80,14 @@ class Submarine:
 				self._YPos  = message[3]
 
 		# This method checks the IMU connection and update values
+
+	def getControllerPackets(self):
+		# Check the socket listening to the controller and update the motors if there is a message
+		if self.controllerParentConn.recv():
+			packet = self.controllerParentConn.recv()
+			print(packet)
+			self.UpdateMotorSpeed(packet)
+
 	def UpdateDepth(self):
 		# Check if the Depth Sensor has posted a message
 		if(self.depthParnetConn.poll()):
@@ -75,46 +96,8 @@ class Submarine:
 				self._messageBoard.LogMessage(message)
 			else:
 				self._depth = message
-
-	def UpdateJoystick(self):
-		# Check to see if Joystick sent a message
-		if(self.controllerParentConn.poll()):
-			message = self.controllerParentConn.recv()
-			if (message):
-				if isinstance(message, tuple) and self._state is "manual":
-					# We only want to go here if we are set to manual mode
-					left_forward = message[0] <= 0
-					right_forward = message[1] <= 0
-					packet = [abs(message[0]),left_forward, abs(message[1]),right_forward,self._servoAngle]
-					self.UpdateMotorSpeed(packet)
-
-				if isinstance(message, int) and self._state is "manual":
-					# We only want to go here if we are set to manual mode
-					# Must be a servo command
-					packet = [None, None, None, None, message]
-					self.UpdateMotorSpeed(packet)
-
-				if isinstance(message, str):
-					# Three possibilities: 'auto', 'manual', and 'stop' which toggle between the various modes
-					# 'auto' flag is autonomous operation of the sub
-					# 'manual' is control via the joystick
-					# 'stop' freezes all motion, no auto or manual action
-					# TODO: Determine a way of implementing these states.
-					self._state = message
-
-	def CheckSerial(self):
-		if(self._messageBoard._sPort.inWaiting()):
-			message = self._messageBoard._sPort.readline()
-			if( message != ''):
-				try:
-					message = message.decode('ascii')
-					if(message.find("[Log]") != -1):
-						self._messageBoard.LogMessage(message)
-				except:
-					message = ''
 	
 	def UpdateMotorSpeed(self,Packet):
-		# Packet format: [Left Speed%, BooleanForward, Right Speed%, BooleanForward, Servo Angle]
 		if(Packet == None or len(Packet) < 5):
 			return
 		
@@ -134,16 +117,20 @@ class Submarine:
 			self._SubMotors.SetServoAngle(Packet[4], Packet[5])
 			
 	def UpdateSubState(self):
-		self.UpdateAngles()
-		self.UpdateDepth()
-		self.CheckSerial()
-		self.UpdateJoystick()
-
+		if(self._upateAngles):
+			self.UpdateAngles()
+		if(self._upateDepth):
+			self.UpdateDepth()
+		
 	# This will maintain a trajectory
 	def Forward (self, length):
 		self.UpdateSubState()
 		counter = 0
 		startTime = time()
+		
+		# Capture the state of the submarine
+		self._maintainForward.CaptureState([self._roll,self._pitch,self._yaw,self._YPos], self._depth)
+		self._maintainDepth.CaptureState  ([self._roll,self._pitch,self._yaw,self._YPos], self._depth)
 		
 		while( time() - startTime < length):
 			# Update the submarine state
@@ -152,11 +139,43 @@ class Submarine:
 			counter = counter + 1
 			# Send message if enough time has passed
 			if( counter == self._rateDiff):
-				if(not self._maintainForward.StateCaptured):
-					self._maintainForward.CaptureState([self._roll,self._pitch,self._yaw,self._YPos], self._depth)
+				# This will correct for an X-Y Variation 
 				self.UpdateMotorSpeed(self._maintainForward.UpdateState([self._roll,self._pitch,self._yaw,self._YPos], self._depth))
-				counter = 0 
-				
+				# This will correct for an Z Variation
+				self.UpdateMotorSpeed(self._maintainDepth.UpdateState([self._roll,self._pitch,self._yaw,self._YPos], self._depth))
+				# Reset the counter
+				counter = 0
+	
+	def ChangeDepth(self, depth):
+		self.UpdateSubState()
+		counter = 0
+		startTime = time()
+		
+		# Capture the state of the submarine
+		self._maintainForward.CaptureState([self._roll,self._pitch,self._yaw,self._YPos], self._depth)
+		self._goToDepth.CaptureState (self._depth, depth)
+		
+		# Set a flag to notify us when we reach our desired depth 
+		reachedDepth = False
+		
+		while( not reachedDepth ):
+			# Update the submarine state
+			self.UpdateSubState()
+			# Update the counter
+			counter = counter + 1
+			# Send message if enough time has passed
+			if( counter == self._rateDiff):
+				# This will correct for an X-Y Variation 
+				self.UpdateMotorSpeed(self._maintainForward.UpdateState([self._roll,self._pitch,self._yaw,self._YPos], self._depth))
+				# Set the angle of attack so we can dive
+				response = self._goToDepth.UpdateState(self._depth)
+				if(response != False):
+					self.UpdateMotorSpeed(response)
+				else:
+					reachedDepth = True
+				# Reset the counter
+				counter = 0
+
 	def ClockWiseTurn (self, angle):
 		self.UpdateSubState()
 		counter = 0
@@ -173,15 +192,7 @@ class Submarine:
 					self._clockWiseTurn.CaptureState([self._roll,self._pitch,self._yaw],angle)
 				self.UpdateMotorSpeed(self._clockWiseTurn.UpdateState([self._roll,self._pitch,self._yaw]))
 				counter = 0 
-	
-	def Dive(self, length):
-		self.UpdateMotorSpeed([None, None, None, None, 100, False])
-		self.Forward(length)
-	
-	def Rise(self, length):
-		self.UpdateMotorSpeed([None, None, None, None, 100, True])
-		self.Forward(length)
-	
+				
 	def CounterClockWiseTurn(self, angle):
 		self.UpdateSubState()
 		counter = 0
@@ -201,9 +212,8 @@ class Submarine:
 		
 	def ShutDown(self):
 		# Tell the IMU process to exits
-		self.controllerParentConn.send(False)
-	  self.IMUParnetConn.send("Close")
-		self.depthParnetConn.send("Close")
-		self._messageBoard.CloseBoard()
 		print("Here fuck # 2")
+		self.IMUParnetConn.send("Close")
+		self.depthParnetConn.send("Close")
+		self.controllerParentConn.send("Close")
 		self._messageBoard.CloseBoard()

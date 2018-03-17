@@ -1,30 +1,28 @@
-# This keep the sub moving forward
+# This keep the sub moving forward, corrects for changes in the X-Y direction
+# Calling this alone will not correct for any depth variations
 import time
 import math
 
 class MaintainForward:
 	def __init__(self):
+		# The basic speed to send to the motors
 		self.baseSpeed = 50
-		self.accelConverstion = 0
+		# The maximum amount the speed can change
 		self.maxBump = 50
-		self.maxAngleChange = 15
-		self.maxPitch = 15
+		# The maximum deflection we can expect
 		self.maxDeflection = 15
+		# This keeps track of the fact that we recored the state we want to maintain
 		self.StateCaptured = False
-		self.Vx = 0.01
+		# This is an approximation to the forward speed, used in the the acceleration correction 
+		self.Vx = 0.01		
 		
 	def CaptureState (self, angles, depth):
-		self.roll  = angles[0]
-		self.pitch = angles[1]
 		self.yaw   = angles[2]
 		self.TargetY = angles[3]
 		self.TargetYaw = self.yaw
-		self.TargetPitch = self.pitch
 		self.StateCaptured = True
 	
-	def UpdateState (self, angles, depth):			
-		self.roll  = angles[0]
-		self.pitch = angles[1]
+	def UpdateState (self, angles, depth):
 		self.yaw   = angles[2]
 		self.yPos  = angles[3]
 		
@@ -32,25 +30,11 @@ class MaintainForward:
 		# diffY = self.TargetY - self.yPos
 		# diffInYaw = math.degrees(math.atan2(abs(diffY), self.Vx))
 		# if(diffY > 0):
-			# self.TargetPitch = self.TargetPitch + diffInYaw
+			# self.TargetYaw = self.TargetYaw + diffInYaw
 		# else:
-			# self.TargetPitch = self.TargetPitch - diffInYaw
+			# self.TargetYaw = self.TargetYaw - diffInYaw
 		
 		diffYaw = abs(self.yaw - self.TargetYaw)
-		diffPitch = 0 # abs(self.pitch - self.TargetPitch)
-		servoAngle = None
-		servoDirection = True
-		
-		# Correct for pitch changes
-		if( diffPitch > 1 ):
-			angleBump = 100 * float(diffPitch)  / self.maxPitch
-			servoAngle = angleBump
-			if( self.pitch > self.TargetPitch ):
-				# We are going down, turn us up 
-				servoDirection = False
-			else:
-				# We are going up, turn us down 
-				servoDirection = True
 		
 		# Correct for yaw changes
 		if( diffYaw > 270 ):
@@ -62,10 +46,10 @@ class MaintainForward:
 			print( speedBump )
 			if( self.yaw > self.TargetYaw):
 				# We are turning clockwise, make the right motor stronger
-				return[self.baseSpeed - speedBump, True, self.baseSpeed + speedBump, True, servoAngle, servoDirection]
+				return[self.baseSpeed - speedBump, True, self.baseSpeed + speedBump, True, None, None]
 				
 			else:
 				# We are turning counter clockwise, make the left motor stronger
-				return[self.baseSpeed + speedBump, True, self.baseSpeed - speedBump, True, servoAngle, servoDirection]
+				return[self.baseSpeed + speedBump, True, self.baseSpeed - speedBump, True, None, None]
 		
-		return[self.baseSpeed, True, self.baseSpeed, True, 0, False]
+		return[self.baseSpeed, True, self.baseSpeed, True, None, None]
