@@ -24,8 +24,10 @@ class ControllerOps:
 
     def getStickPosition(self, dataFile, connection):
         pygame.joystick.init()
+        # Pygame needs a screen to read joystick values
         screen = pygame.display.set_mode((10, 10))
 
+        # Initialize the joystick
         self.controller = pygame.joystick.Joystick(0)
         self.controller.init()
 
@@ -56,17 +58,18 @@ class ControllerOps:
             if self.state == "manual":
                 # Update states
                 pygame.event.pump()
-                # Hardcoded for now, will fix later.
+                # Hardcoded threshholding values
                 threshhold = .2
                 maxValApprox = .8
 
                 roll = self.controller.get_axis(0)
                 pitch = self.controller.get_axis(1)
-                throttle = (((self.controller.get_axis(2)+.7)/1.2)*100)-3
+                # Convert the throttle values from ~(-0.7 <-> 0.5) to (0 <-> 45)
+                throttle = (((self.controller.get_axis(2)+.7)/1.2)*45)-3
                 if throttle < 5:
                     throttle = 0
-                if throttle > 95:
-                    throttle = 100
+                if throttle > 40:
+                    throttle = 45
 
                 # yaw = controller.get_axis(3) (Not used at the moment)
                 trigger = self.controller.get_button(0)
@@ -75,9 +78,9 @@ class ControllerOps:
                 # auto_revert = self.controller.get_button(5)
 
                 # Now that we have pitch/roll/throttle/yaw values, we can start using them
-                # Send a tuple (x,y) where x and y are the speeds for the left and right motors respectively
+                # Send a string "x,y" where x and y are the speeds for the left and right motors respectively
                 if kill:
-                    # Shut down both the motors
+                    # Shut down both the motors and set the servo to zero
                     connection.send("0, 0")
                     connection.send("srv,0")
                     time.sleep(1)
@@ -97,7 +100,7 @@ class ControllerOps:
                     # The more the joystick is moved, the faster the turn speed
                     # Scales from ~50% to ~0% speed on the opposite motor
                     turnSpeed = (abs((abs(roll)-maxValApprox))*throttle)
-                    if turnSpeed < 15:
+                    if turnSpeed < 10:
                         turnSpeed = 0
                     if roll > 0:
                         # If roll is positive, set the left motor to active and right to off
@@ -106,6 +109,7 @@ class ControllerOps:
                         # If roll is negative, set left to zero and right to active
                         connection.send(str(turnSpeed)+','+ str(throttle))
 
+                # Commented out because we currently don't want to go back to auto after going to manual
                 # if auto_revert:
                 #     # If we press button 5, revert to automatic controls.
                 #     connection.send("auto")
@@ -124,6 +128,8 @@ class ControllerOps:
                 #         pygame.event.pump()
                 #         stop = self.controller.get_button(6)
                 #     break
+
+                # Clear the event queue so we don't have a long backlog of events that we need to send to the Pi
                 pygame.event.clear()
                 time.sleep(.01)
 
