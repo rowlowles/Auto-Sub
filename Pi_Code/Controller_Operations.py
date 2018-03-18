@@ -13,7 +13,6 @@ import time
 # Button 5: Labelled as 06 on the joystick
 # Button 1: Labelled as 02 on the joystick
 
-
 class ControllerOps:
 
     def __init__(self, dataFile, connection):
@@ -58,7 +57,7 @@ class ControllerOps:
             if self.state == "manual":
                 # Update states
                 pygame.event.pump()
-                # Hardcoded threshholding values
+                # Hardcoded threshold values
                 threshhold = .2
                 maxValApprox = .8
 
@@ -132,7 +131,6 @@ class ControllerOps:
                 # Clear the event queue so we don't have a long backlog of events that we need to send to the Pi
                 pygame.event.clear()
                 time.sleep(.01)
-
 
             if (connection.poll()):
                 readController = connection.recv()

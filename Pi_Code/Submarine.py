@@ -85,7 +85,7 @@ class Submarine:
 		# Check the socket listening to the controller and update the motors if there is a message
 		if self.controllerParentConn.recv():
 			packet = self.controllerParentConn.recv()
-			print(packet)
+			# print(packet)
 			self.UpdateMotorSpeed(packet)
 
 	def UpdateDepth(self):

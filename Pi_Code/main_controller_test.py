@@ -3,7 +3,6 @@ import time
 # Create the board
 sub = Submarine(True)
 
-sub.Forward(1)
 count = 0
 while count <= 1000:
 	# Read 10 seconds of controller inputs

@@ -10,7 +10,6 @@ parent, child = Pipe()
 
 host = "169.254.8.150" # My personal Pi that I was using for testing this script
 #host = "169.254.14.48" # New pi we borrowed from Sasha's group
-#host = "169.254.144.182" # ld Pi that went the way of the dinosaurs
 
 port = 13000
 addr = (host, port)

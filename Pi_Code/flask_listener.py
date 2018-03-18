@@ -12,6 +12,7 @@ class portListener():
         self.UDPSock = socket(AF_INET, SOCK_DGRAM)
         self.UDPSock.bind(self.addr)
         print ("Waiting to receive messages...")
+        # Create a subprocess to listen to the socket
         p = Process(target=self.pollSocket, args= (connection,))
         p.start()
 
